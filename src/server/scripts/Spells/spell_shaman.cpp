@@ -149,47 +149,40 @@ class spell_sha_mana_tide_totem : public SpellScriptLoader
     public:
         spell_sha_mana_tide_totem() : SpellScriptLoader("spell_sha_mana_tide_totem") { }
 
-        class spell_sha_mana_tide_totem_SpellScript : public SpellScript
+        class spell_sha_mana_tide_totem_AuraScript : public AuraScript
         {
-            PrepareSpellScript(spell_sha_mana_tide_totem_SpellScript);
+            PrepareAuraScript(spell_sha_mana_tide_totem_AuraScript);
 
-            bool Validate(SpellInfo const* /*spellEntry*/)
+            void CalcAmount(AuraEffect const* /*aurEff*/, int32& amount, bool& canBeRecalculated)
             {
-                if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_GLYPH_OF_MANA_TIDE))
-                    return false;
-                if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_MANA_TIDE_TOTEM))
-                    return false;
-                return true;
-            }
+                Unit* caster = GetCaster()->GetOwner();
+                int32 multiplier = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
+				int32 base = int32(caster->GetTotalStatValue(STAT_SPIRIT));
+               
+					//"excluding short - duration Spirit bonuses"
+				Unit::AuraEffectList const& ModStatAuras = caster->GetAuraEffectsByType(SPELL_AURA_MOD_STAT);
+                for (Unit::AuraEffectList::const_iterator i = ModStatAuras.begin(); i != ModStatAuras.end(); ++i)
+				{	
+					if ((*i)->GetMiscValue() != UNIT_MOD_STAT_SPIRIT)
+						continue;
+	
+					// TODO: Sprawdzic ile to "short-duration" Przyjalem 60 sec
+					if ((*i)->GetBase()->GetMaxDuration() <= 60000)	
+						base -= (*i)->GetAmount();
+				}
 
-            void HandleDummy(SpellEffIndex /*effIndex*/)
-            {
-                Unit* caster = GetCaster();
-                if (Unit* unitTarget = GetHitUnit())
-                {
-                    if (unitTarget->getPowerType() == POWER_MANA)
-                    {
-                        int32 effValue = GetEffectValue();
-                        // Glyph of Mana Tide
-                        if (Unit* owner = caster->GetOwner())
-                            if (AuraEffect* dummy = owner->GetAuraEffect(SHAMAN_SPELL_GLYPH_OF_MANA_TIDE, 0))
-                                effValue += dummy->GetAmount();
-                        // Regenerate 6% of Total Mana Every 3 secs
-                        int32 effBasePoints0 = int32(CalculatePctN(unitTarget->GetMaxPower(POWER_MANA), effValue));
-                        caster->CastCustomSpell(unitTarget, SHAMAN_SPELL_MANA_TIDE_TOTEM, &effBasePoints0, NULL, NULL, true, NULL, NULL, GetOriginalCaster()->GetGUID());
-                    }
-                }
-            }
-
+				amount = int32(CalculatePctN(base, multiplier));
+				canBeRecalculated = false; 
+			}
             void Register()
             {
-                OnEffectHitTarget += SpellEffectFn(spell_sha_mana_tide_totem_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_sha_mana_tide_totem_AuraScript::CalcAmount, EFFECT_0, SPELL_AURA_MOD_STAT);
             }
         };
 
-        SpellScript* GetSpellScript() const
+        AuraScript* GetAuraScript() const
         {
-            return new spell_sha_mana_tide_totem_SpellScript();
+            return new spell_sha_mana_tide_totem_AuraScript();
         }
 };
 
