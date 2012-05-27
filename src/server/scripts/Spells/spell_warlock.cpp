@@ -35,6 +35,7 @@ enum WarlockSpells
     WARLOCK_DEMONIC_EMPOWERMENT_IMP         = 54444,
     WARLOCK_IMPROVED_HEALTHSTONE_R1         = 18692,
     WARLOCK_IMPROVED_HEALTHSTONE_R2         = 18693,
+	WARLOCK_GLYPH_OF_FEAR					= 56244,
 };
 
 class spell_warl_banish : public SpellScriptLoader
@@ -360,8 +361,8 @@ class spell_warl_fear : public SpellScriptLoader
         class spell_warl_fear_AuraScript : public AuraScript
         {
             PrepareAuraScript(spell_warl_fear_AuraScript);
-
-            void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+			
+			void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
                 // Check for Improved Fear
                 if (AuraEffect* aurEff = GetCaster()->GetAuraEffect(SPELL_AURA_DUMMY, SPELLFAMILY_WARLOCK, 98, 0))
@@ -380,9 +381,16 @@ class spell_warl_fear : public SpellScriptLoader
                         GetCaster()->CastSpell(GetTarget(), spellId, true);
                 }
             }
+			   //Prevent execute eff_2 if without glyph of fear
+			void OnApplyCheckGlyph(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+			{
+				if (!GetCaster()->HasAura(WARLOCK_GLYPH_OF_FEAR))
+					PreventDefaultAction();
+			}
 
             void Register()
             {
+				OnEffectApply += AuraEffectApplyFn(spell_warl_fear_AuraScript::OnApplyCheckGlyph, EFFECT_2, SPELL_AURA_MOD_ROOT, AURA_EFFECT_HANDLE_REAL);
                 AfterEffectRemove += AuraEffectRemoveFn(spell_warl_fear_AuraScript::OnRemove, EFFECT_0, SPELL_AURA_MOD_FEAR, AURA_EFFECT_HANDLE_REAL);
             }
         };
@@ -430,6 +438,40 @@ public:
     }
 };
 
+class spell_warl_glyph_of_fear : public SpellScriptLoader
+{
+public:
+    spell_warl_glyph_of_fear() : SpellScriptLoader("spell_warl_glyph_of_fear") { }
+
+    class spell_warl_glyph_of_fear_AuraScript : public AuraScript
+    {
+        PrepareAuraScript(spell_warl_glyph_of_fear_AuraScript);
+
+        void HandleEffectCalcSpellMod(AuraEffect const* auraeff, SpellModifier*& spellMod, SpellInfo const * /*spellInfo*/, Unit * /*target*/)
+		{
+			if (!spellMod)
+			{
+				spellMod = new SpellModifier(GetAura());
+				spellMod->op = SPELLMOD_COOLDOWN;
+				spellMod->type = SPELLMOD_FLAT;
+				spellMod->spellId = GetId();
+				spellMod->mask[1] = 0x0400;
+				spellMod->value = auraeff->GetAmount()*1000;
+			}
+		}
+
+		void Register()
+        {
+			DoEffectCalcSpellMod += AuraEffectCalcSpellModFn(spell_warl_glyph_of_fear_AuraScript::HandleEffectCalcSpellMod, EFFECT_0, SPELL_AURA_DUMMY);
+        }
+    };
+
+    AuraScript* GetAuraScript() const
+    {
+        return new spell_warl_glyph_of_fear_AuraScript();
+    }
+};
+
 void AddSC_warlock_spell_scripts()
 {
     new spell_warl_banish();
@@ -440,4 +482,5 @@ void AddSC_warlock_spell_scripts()
     new spell_warl_life_tap();
     new spell_warl_fear();
     new spell_warl_drain_life();
+	new spell_warl_glyph_of_fear();
 }
