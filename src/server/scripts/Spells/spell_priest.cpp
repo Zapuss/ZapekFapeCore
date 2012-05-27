@@ -36,6 +36,7 @@ enum PriestSpells
     PRIEST_SPELL_REFLECTIVE_SHIELD_R1           = 33201,
     PRIEST_SPELL_IMPROVED_POWER_WORD_SHIELD_R1  = 14748,
     PRIEST_SPELL_IMPROVED_POWER_WORD_SHIELD_R2  = 14768,
+	PRIEST_SPELL_GLYPH_OF_PSYCHIC_SCREAM		= 55676,
 };
 
 // Guardian Spirit
@@ -434,7 +435,38 @@ class spell_pri_power_word_shield : public SpellScriptLoader
             return new spell_pri_power_word_shield_AuraScript();
         }
 };
+class spell_pri_psychic_scream: public SpellScriptLoader
+{
+	public:
+	spell_pri_psychic_scream() : SpellScriptLoader("spell_pri_psychic_scream") { }
 
+    class spell_pri_psychic_scream_AuraScript : public AuraScript
+	{
+		PrepareAuraScript(spell_pri_psychic_scream_AuraScript);
+
+		bool Validate(SpellInfo const* spellEntry)
+		{
+			if (!sSpellMgr->GetSpellInfo(PRIEST_SPELL_GLYPH_OF_PSYCHIC_SCREAM))
+				return false;
+			return true;
+		}
+		void CheckGlyph(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+		{
+			if (!GetCaster()->HasAura(PRIEST_SPELL_GLYPH_OF_PSYCHIC_SCREAM))	
+				PreventDefaultAction();
+		}
+
+		void Register()
+		{
+			OnEffectApply += AuraEffectApplyFn(spell_pri_psychic_scream_AuraScript::CheckGlyph, EFFECT_2, SPELL_AURA_MOD_ROOT, AURA_EFFECT_HANDLE_REAL);
+		}
+	};
+
+	AuraScript* GetAuraScript() const
+	{
+	return new spell_pri_psychic_scream_AuraScript();
+	}
+};
 void AddSC_priest_spell_scripts()
 {
     new spell_pri_guardian_spirit();
@@ -447,4 +479,5 @@ void AddSC_priest_spell_scripts()
     new spell_pri_mind_blast();
     new spell_pri_power_word_fortitude();
     new spell_pri_power_word_shield();
+	new spell_pri_psychic_scream();
 }
