@@ -40,6 +40,7 @@ enum PaladinSpells
     SPELL_BLESSING_OF_LOWER_CITY_SHAMAN          = 37881,
 
     SPELL_DIVINE_PURPOSE_PROC                    = 90174,
+	SPELL_GLYPH_OF_EXORCISM						 = 54934,
 };
 
 // 31850 - Ardent Defender
@@ -550,7 +551,54 @@ class spell_pal_selfless_healer : public SpellScriptLoader
             return new spell_pal_selfless_healer_AuraScript();
         }
 };
+class spell_pal_exorcism: public SpellScriptLoader
+{
+	public:
+	spell_pal_exorcism() : SpellScriptLoader("spell_pal_exorcism") { }
 
+    class spell_pal_exorcism_SpellScript : public SpellScript
+	{
+		PrepareSpellScript(spell_pal_exorcism_SpellScript);
+
+		bool Validate(SpellInfo const* spellEntry)
+		{
+			if (!sSpellMgr->GetSpellInfo(SPELL_GLYPH_OF_EXORCISM))
+				return false;
+			return true;
+		}
+		
+		void HitTarget(SpellEffIndex /*effIndex*/)
+		{
+			if (GetCaster()->HasAura(SPELL_GLYPH_OF_EXORCISM) && GetHitAura())	
+			{
+				int32 multiplier = GetCaster()->GetAura(SPELL_GLYPH_OF_EXORCISM)->GetEffect(EFFECT_0)->GetAmount();
+				int32 dmg = CalculatePctN(GetHitDamage(), multiplier);
+				int32 amount = dmg / GetHitAura()->GetEffect(EFFECT_1)->GetTotalTicks();
+				GetHitAura()->GetEffect(EFFECT_1)->SetAmount(amount);
+				GetHitAura()->GetEffect(EFFECT_1)->SetCanBeRecalculated(true);
+            }
+		}
+		
+		void HandleAfterHit()
+		{
+			if (!GetCaster()->HasAura(SPELL_GLYPH_OF_EXORCISM))
+			{
+				PreventHitAura();
+			}
+		}
+
+		void Register()
+		{
+			OnEffectHitTarget += SpellEffectFn(spell_pal_exorcism_SpellScript::HitTarget, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
+			AfterHit += SpellHitFn(spell_pal_exorcism_SpellScript::HandleAfterHit);
+		}
+	};
+
+	SpellScript* GetSpellScript() const
+	{
+	return new spell_pal_exorcism_SpellScript();
+	}
+};
 void AddSC_paladin_spell_scripts()
 {
     new spell_pal_ardent_defender();
@@ -562,4 +610,5 @@ void AddSC_paladin_spell_scripts()
     new spell_pal_judgements_of_the_bold();
     new spell_pal_word_of_glory();
     new spell_pal_selfless_healer();
+	new spell_pal_exorcism();
 }
