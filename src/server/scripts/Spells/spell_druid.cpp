@@ -28,7 +28,8 @@
 enum DruidSpells
 {
     DRUID_INCREASED_MOONFIRE_DURATION   = 38414,
-    DRUID_NATURES_SPLENDOR              = 57865
+    DRUID_NATURES_SPLENDOR              = 57865,
+	GLYPH_OF_FRENZIED_REGENERATION		= 54810,
 };
 
 // 54846 Glyph of Starfire
@@ -392,6 +393,94 @@ class spell_dru_berserk : public SpellScriptLoader
            return new spell_dru_berserk_AuraScript();
        }
 };
+class spell_dru_frenzied_regeneration : public SpellScriptLoader
+{
+	public:
+	spell_dru_frenzied_regeneration() : SpellScriptLoader("spell_dru_frenzied_regeneration") { }
+
+	class spell_dru_frenzied_regeneration_AuraScript : public AuraScript
+	{
+		PrepareAuraScript(spell_dru_frenzied_regeneration_AuraScript)
+		
+		bool Validate(SpellInfo const* spellEntry)
+		{
+			if (!sSpellMgr->GetSpellInfo(GLYPH_OF_FRENZIED_REGENERATION))
+				return false;
+			return true;
+		}
+		bool Load()
+		{
+			if (GetCaster()->GetTypeId() != TYPEID_PLAYER)
+                return false;
+            return true;
+        }
+
+//*****************Efekt 0  "converts up to 10 rage per second into health"************************
+// Przeniesione z AuraEffect::HandlePeriodicDummyAuraTick zeby bylo wszystko w jednym miejscu
+		void OnTick(AuraEffect const* aurEff)
+		{
+			 Unit* caster = GetCaster();
+			 if (caster->getPowerType() != POWER_RAGE)
+				return;
+             uint32 rage = caster->GetPower(POWER_RAGE);
+                    // Nothing todo
+			 if (rage == 0)
+				return;
+			 int32 mod = (rage < 100) ? rage : 100;
+             int32 points = caster->CalculateSpellDamage(caster, GetSpellInfo(), EFFECT_1); // Effekt_0 ma wg bazy value 15 0.o
+             int32 regen = caster->GetMaxHealth() * (mod * points / 10) / 1000;
+             caster->CastCustomSpell(caster, 22845, &regen, 0, 0, true, 0, aurEff);
+             caster->SetPower(POWER_RAGE, rage-mod);
+		}
+//      Glyph of FR: "causes your Frenzied Regeneration to no longer convert rage into health"
+		void CalcPeriodicEff0(AuraEffect const* aurEff, bool& isPeriodic, int32& amplitude)
+		{
+			if (GetCaster()->HasAura(GLYPH_OF_FRENZIED_REGENERATION))
+				isPeriodic = false;
+		}
+
+//******************Effect 1 : Increases maximum health by 30% (not flat 30)******************			
+		void CalcAmountEff1(AuraEffect const* aurEff, int32& amount, bool& canBeRecalculated)
+		{
+			amount = int32(GetCaster()->CountPctFromMaxHealth(amount));
+		}
+
+// 		      increases health to 30% (if below that value)
+		void AfterEffect1Apply(AuraEffect const* aurEff, AuraEffectHandleModes /*mode*/)
+		{
+			Unit* caster = GetCaster();
+			uint32 health_to_reach = caster->CountPctFromMaxHealth(30); // wartosc 30% max healtha
+//AuraEffect::HandleAuraModIncreaseHealth zwieksza max health, a nastepnie aktualny health o ta sama wartosc
+// w tym skillu aktualny health powinien byc zmieniony tylko i wylacznie jezeli jest ponizej 30%
+			uint32 healththeory = caster->GetHealth() - aurEff->GetAmount();  // Wartosc heltha jaka powinna byc po odpaleniu skilla
+			uint32 amount = healththeory < health_to_reach ? health_to_reach : healththeory;
+			caster->SetHealth(amount);
+		} 
+
+//AuraEffect::HandleAuraModIncreaseHealth po zdjeciu buffa zmniejsza aktualny health o taka ilosc, 
+//		o jaka zwiekszyl przy aplikowaniu aury, trzeba dodac to, co aura chce zabrac. 
+		void OnEff1Remove(AuraEffect const* aurEff, AuraEffectHandleModes mode)
+		{
+			GetCaster()->ModifyHealth(aurEff->GetAmount());
+		}
+
+//Efekt 2 nie wymaga wylaczenia przy braku glypha, bo i tak ma value=0, taka informacja jak by ktos sprawdzal czy dziala skrypt:P
+		
+		void Register()
+		{
+			DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dru_frenzied_regeneration_AuraScript::CalcAmountEff1, EFFECT_1, SPELL_AURA_MOD_INCREASE_HEALTH_2);
+			AfterEffectApply += AuraEffectApplyFn(spell_dru_frenzied_regeneration_AuraScript::AfterEffect1Apply, EFFECT_1, SPELL_AURA_MOD_INCREASE_HEALTH_2, AURA_EFFECT_HANDLE_REAL);
+			OnEffectPeriodic += AuraEffectPeriodicFn(spell_dru_frenzied_regeneration_AuraScript::OnTick, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
+			DoEffectCalcPeriodic += AuraEffectCalcPeriodicFn(spell_dru_frenzied_regeneration_AuraScript::CalcPeriodicEff0, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY);
+			OnEffectRemove += AuraEffectRemoveFn(spell_dru_frenzied_regeneration_AuraScript::OnEff1Remove, EFFECT_1, SPELL_AURA_MOD_INCREASE_HEALTH_2, AURA_EFFECT_HANDLE_REAL);
+		}
+	};
+
+	AuraScript* GetAuraScript() const
+	{
+	return new spell_dru_frenzied_regeneration_AuraScript();
+	}
+};
 
 void AddSC_druid_spell_scripts()
 {
@@ -404,4 +493,5 @@ void AddSC_druid_spell_scripts()
     new spell_dru_ferocious_bite();
     new spell_dru_mark_of_the_wild();
     new spell_dru_berserk();
+	new spell_dru_frenzied_regeneration();
 }
