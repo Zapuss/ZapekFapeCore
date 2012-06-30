@@ -104,32 +104,33 @@ void Totem::InitSummon()
     }
 
     // Some totems can have both instant effect and passive spell
-	if (GetSpell(1))
+    switch (GetSpell(1))
 	{
-		switch (GetSpell(1))
-		{
-			//Totemic Wrath
-			case 77747:
-				if (GetOwner()->HasAura(77746)) //Totemic Wrath talent.
-					CastSpell(this, GetSpell(1), true);
-				break;
-
-			//Nature's Grasp
-			case 64695:
-				if (AuraEffect* aurEff = GetOwner()->GetAuraEffect(SPELL_AURA_DUMMY, SPELLFAMILY_SHAMAN, 20, 1))
-				{
-					int32 chance = aurEff->GetSpellInfo()->Effects[EFFECT_1].CalcValue();
-					if (roll_chance_i(chance))	
-						CastSpell(this, GetSpell(1), true);
-				}
-				break;
-
-			default:
+        case 0:
+            break;
+        //Totemic Wrath
+        case 77747:
+            if (GetOwner()->HasAura(77746)) //Totemic Wrath talent.
+                CastSpell(this, GetSpell(1), true);
+            break;
+        //Nature's Grasp
+        case 64695:
+            if (AuraEffect* aurEff = GetOwner()->GetAuraEffect(SPELL_AURA_DUMMY, SPELLFAMILY_SHAMAN, 20, 1))
+            {
+                int32 chance = aurEff->GetSpellInfo()->Effects[EFFECT_1].CalcValue();
+                if (roll_chance_i(chance))
+                    CastSpell(this, GetSpell(1), true);
+            }
+            break;
+       // Elemental resistance casted by healing stream totem
+        case 8185:
+            if (GetOwner()->HasAura(55456)) //Glyph of healing stream totem
 				CastSpell(this, GetSpell(1), true);
-				break;
-		}
+            break;
+        default:
+            CastSpell(this, GetSpell(1), true);
+            break;
 	}
-	
 }
 
 void Totem::UnSummon()
