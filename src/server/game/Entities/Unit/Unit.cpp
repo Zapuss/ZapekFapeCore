@@ -11127,8 +11127,20 @@ uint32 Unit::SpellHealingBonus(Unit* victim, SpellInfo const* spellProto, uint32
     // and Warlock's Healthstones
     if (spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK && (spellProto->SpellFamilyFlags[0] & 0x10000))
     {
-        healamount = 0.45 * (GetMaxHealth() - 10 * (STAT_STAMINA - 180));
-        return healamount;
+        healamount = 0.45f * GetCreateHealth();
+        // implementacja glyph of healthstone
+        victim->ApplySpellMod(spellProto->Id, SPELLMOD_DAMAGE, healamount);
+        
+        //hacky bo skopiowanie, powtorzenie kodu z dolu (linia 11366) ale dziala.
+        float minval = (float)victim->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
+        if (minval)
+        AddPctF(healamount, minval);
+        
+        float maxval = (float)victim->GetMaxPositiveAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
+        if (maxval)
+        AddPctF(healamount, maxval);
+ 
+        return healamount > 17000 ? 17000 : healamount;
     }
 
     // Healing Done
