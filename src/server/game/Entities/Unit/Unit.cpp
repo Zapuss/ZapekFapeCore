@@ -4623,6 +4623,21 @@ int32 Unit::GetMaxNegativeAuraModifierByAffectMask(AuraType auratype, SpellInfo 
     return modifier;
 }
 
+int32 Unit::GetTotalAuraModifierByAffectMaskForCaster(AuraType auratype, SpellInfo const* affectedSpell, Unit const* caster) const
+{
+    if (!caster)
+        return 0;
+    int32 modifier = 0;
+    
+    AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
+    for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
+    {
+        if (((*i)->GetCaster() == caster) && (*i)->IsAffectingSpell(affectedSpell))
+            modifier += (*i)->GetAmount();
+    }
+    return modifier;
+}
+
 void Unit::_RegisterDynObject(DynamicObject* dynObj)
 {
     m_dynObj.push_back(dynObj);
@@ -11031,6 +11046,8 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
         default:
             return false;
     }
+
+    crit_chance += victim->GetTotalAuraModifierByAffectMaskForCaster(SPELL_AURA_MOD_CRIT_CHANCE_FOR_CASTER, spellProto, this);
     // percent done
     // only players use intelligence for critical chance computations
     if (Player* modOwner = GetSpellModOwner())
