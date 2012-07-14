@@ -6362,6 +6362,10 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
         {
             switch (dummySpell->Id)
             {
+                // Disentanglement 
+                case 96429:
+                    RemoveAurasWithMechanic((1 << MECHANIC_ROOT));
+                    break;
                 // Nature's Ward
                 case 33881:
                 case 33882:
