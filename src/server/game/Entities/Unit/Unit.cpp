@@ -14514,19 +14514,19 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                     case SPELL_AURA_MOD_ROOT:
                     case SPELL_AURA_TRANSFORM:
                     {
+                        // Spell own direct damage at apply wont break the CC
+                        if (procSpell && (procSpell->Id == triggeredByAura->GetId()))
+                        {
+                           Aura* aura = triggeredByAura->GetBase();
+                           // called from spellcast, should not have ticked yet
+                           if (aura->GetDuration() == aura->GetMaxDuration())
+                               break;
+                        }
                         // chargeable mods are breaking on hit
                         if (useCharges)
                             takeCharges = true;
                         else
                         {
-                            // Spell own direct damage at apply wont break the CC
-                            if (procSpell && (procSpell->Id == triggeredByAura->GetId()))
-                            {
-                                Aura* aura = triggeredByAura->GetBase();
-                                // called from spellcast, should not have ticked yet
-                                if (aura->GetDuration() == aura->GetMaxDuration())
-                                    break;
-                            }
                             int32 damageLeft = triggeredByAura->GetAmount();
                             // No damage left
                             if (damageLeft < int32(damage))
