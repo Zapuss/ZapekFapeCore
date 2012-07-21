@@ -8197,6 +8197,13 @@ bool Unit::HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, Sp
                 break;
             }
         }
+        case SPELLFAMILY_ROGUE:
+        {
+            // Gouge no longer be broken by bleed effects such as Glyph of Hemorrhage, Rupture and Garrote
+            if (dummySpell->Id == 1776 && procSpell->SpellFamilyFlags.HasFlag(0x00100100, 0x00000000, 0x00000010))
+                *handled = true;
+            break;
+        }
         case SPELLFAMILY_PALADIN:
         {
             // Infusion of Light
