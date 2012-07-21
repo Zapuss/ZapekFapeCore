@@ -4572,7 +4572,7 @@ int32 Unit::GetMaxNegativeAuraModifierByMiscValue(AuraType auratype, int32 misc_
 int32 Unit::GetTotalAuraModifierByAffectMask(AuraType auratype, SpellInfo const* affectedSpell) const
 {
     int32 modifier = 0;
-
+    
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
@@ -4585,7 +4585,7 @@ int32 Unit::GetTotalAuraModifierByAffectMask(AuraType auratype, SpellInfo const*
 float Unit::GetTotalAuraMultiplierByAffectMask(AuraType auratype, SpellInfo const* affectedSpell) const
 {
     float multiplier = 1.0f;
-
+    
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
@@ -4620,6 +4620,21 @@ int32 Unit::GetMaxNegativeAuraModifierByAffectMask(AuraType auratype, SpellInfo 
             modifier = (*i)->GetAmount();
     }
 
+    return modifier;
+}
+
+int32 Unit::GetTotalAuraModifierByAffectMaskForCaster(AuraType auratype, SpellInfo const* affectedSpell, Unit const* caster) const
+{
+    if (!caster)
+        return 0;
+    int32 modifier = 0;
+    
+    AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
+    for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
+    {
+        if (((*i)->GetCaster() == caster) && (*i)->IsAffectingSpell(affectedSpell))
+            modifier += (*i)->GetAmount();
+    }
     return modifier;
 }
 
@@ -6347,6 +6362,10 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
         {
             switch (dummySpell->Id)
             {
+                // Disentanglement 
+                case 96429:
+                    RemoveAurasWithMechanic((1 << MECHANIC_ROOT));
+                    break;
                 // Nature's Ward
                 case 33881:
                 case 33882:
@@ -8178,6 +8197,13 @@ bool Unit::HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, Sp
                 break;
             }
         }
+        case SPELLFAMILY_ROGUE:
+        {
+            // Gouge no longer be broken by bleed effects such as Glyph of Hemorrhage, Rupture and Garrote
+            if (dummySpell->Id == 1776 && procSpell->SpellFamilyFlags.HasFlag(0x00100100, 0x00000000, 0x00000010))
+                *handled = true;
+            break;
+        }
         case SPELLFAMILY_PALADIN:
         {
             // Infusion of Light
@@ -9060,12 +9086,6 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
                     if ((maelstrom->GetStackAmount() == maelstrom->GetSpellInfo()->StackAmount) && roll_chance_i(aurEff->GetAmount()))
                         CastSpell(this, 70831, true, castItem, triggeredByAura);
 
-            // have rank dependent proc chance, ignore too often cases
-            // PPM = 2.5 * (rank of talent),
-            uint32 rank = auraSpellInfo->GetRank();
-            // 5 rank -> 100% 4 rank -> 80% and etc from full rate
-            if (!roll_chance_i(20*rank))
-                return false;
             break;
         }
         case 52179: // Astral Shift
@@ -11031,6 +11051,8 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
         default:
             return false;
     }
+
+    crit_chance += victim->GetTotalAuraModifierByAffectMaskForCaster(SPELL_AURA_MOD_CRIT_CHANCE_FOR_CASTER, spellProto, this);
     // percent done
     // only players use intelligence for critical chance computations
     if (Player* modOwner = GetSpellModOwner())
@@ -11127,8 +11149,20 @@ uint32 Unit::SpellHealingBonus(Unit* victim, SpellInfo const* spellProto, uint32
     // and Warlock's Healthstones
     if (spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK && (spellProto->SpellFamilyFlags[0] & 0x10000))
     {
-        healamount = 0.45 * (GetMaxHealth() - 10 * (STAT_STAMINA - 180));
-        return healamount;
+        healamount = 0.45f * GetCreateHealth();
+        // implementacja glyph of healthstone
+        victim->ApplySpellMod(spellProto->Id, SPELLMOD_DAMAGE, healamount);
+        
+        //hacky bo skopiowanie, powtorzenie kodu z dolu (linia 11366) ale dziala.
+        float minval = (float)victim->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
+        if (minval)
+        AddPctF(healamount, minval);
+        
+        float maxval = (float)victim->GetMaxPositiveAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
+        if (maxval)
+        AddPctF(healamount, maxval);
+ 
+        return healamount > 17000 ? 17000 : healamount;
     }
 
     // Healing Done
@@ -14487,19 +14521,19 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                     case SPELL_AURA_MOD_ROOT:
                     case SPELL_AURA_TRANSFORM:
                     {
+                        // Spell own direct damage at apply wont break the CC
+                        if (procSpell && (procSpell->Id == triggeredByAura->GetId()))
+                        {
+                           Aura* aura = triggeredByAura->GetBase();
+                           // called from spellcast, should not have ticked yet
+                           if (aura->GetDuration() == aura->GetMaxDuration())
+                               break;
+                        }
                         // chargeable mods are breaking on hit
                         if (useCharges)
                             takeCharges = true;
                         else
                         {
-                            // Spell own direct damage at apply wont break the CC
-                            if (procSpell && (procSpell->Id == triggeredByAura->GetId()))
-                            {
-                                Aura* aura = triggeredByAura->GetBase();
-                                // called from spellcast, should not have ticked yet
-                                if (aura->GetDuration() == aura->GetMaxDuration())
-                                    break;
-                            }
                             int32 damageLeft = triggeredByAura->GetAmount();
                             // No damage left
                             if (damageLeft < int32(damage))

@@ -1,0 +1,1 @@
+UPDATE creature_template SET spell2 = 8185 WHERE entry = 3527;

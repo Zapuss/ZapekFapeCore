@@ -3345,15 +3345,8 @@ void SpellMgr::LoadSpellCustomAttr()
                 spellInfo->Effects[0].DieSides = 0; // was 1, that should probably mean seat 0, but instead it's treated as spell 1
                 spellInfo->Effects[0].BasePoints = 52391; // Ride Vehicle (forces seat 0)
                 break;
-            case 19970: // Entangling Roots (Rank 6) -- Nature's Grasp Proc
-            case 19971: // Entangling Roots (Rank 5) -- Nature's Grasp Proc
-            case 19972: // Entangling Roots (Rank 4) -- Nature's Grasp Proc
-            case 19973: // Entangling Roots (Rank 3) -- Nature's Grasp Proc
-            case 19974: // Entangling Roots (Rank 2) -- Nature's Grasp Proc
-            case 19975: // Entangling Roots (Rank 1) -- Nature's Grasp Proc
-            case 27010: // Entangling Roots (Rank 7) -- Nature's Grasp Proc
-            case 53313: // Entangling Roots (Rank 8) -- Nature's Grasp Proc
-                spellInfo->CastTimeEntry = sSpellCastTimesStore.LookupEntry(1);
+            case 19975: // Entangling Roots -- Nature's Grasp Proc
+                spellInfo->InterruptFlags -= SPELL_INTERRUPT_FLAG_MOVEMENT;
                 break;
             case 61719: // Easter Lay Noblegarden Egg Aura - Interrupt flags copied from aura which this aura is linked with
                 spellInfo->AuraInterruptFlags = AURA_INTERRUPT_FLAG_HITBYSPELL | AURA_INTERRUPT_FLAG_TAKE_DAMAGE;
