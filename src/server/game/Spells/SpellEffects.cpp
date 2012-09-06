@@ -1484,10 +1484,17 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 return;
             }
             // Slam
-            if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG_WARRIOR_SLAM && m_spellInfo->SpellIconID == 559)
+            if (m_spellInfo->Id == 1464)
             {
-                int32 bp0 = damage;
-                m_caster->CastCustomSpell(unitTarget, 50783, &bp0, NULL, NULL, true, 0);
+                m_caster->CastSpell(unitTarget, 50783, true);
+                //Single-Minded Fury
+                if (m_caster->HasAura(81099))
+                {
+                    //mega na okolo, da sie krocej sprawdzic czy caster uzywa offhand weapon?
+                    Item* offhand = m_caster->ToPlayer()->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+                    if (offhand && offhand->GetTemplate()->InventoryType == INVTYPE_WEAPON)
+                        m_caster->CastSpell(unitTarget, 81101, true);
+                }
                 return;
             }
             // Execute
