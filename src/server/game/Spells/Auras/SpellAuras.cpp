@@ -1651,27 +1651,34 @@ void Aura::HandleAuraSpecificMods(AuraApplication const* aurApp, Unit* caster, b
             }
             break;
         case SPELLFAMILY_ROGUE:
-            // Stealth
-            if (GetSpellInfo()->SpellFamilyFlags[0] & 0x00400000)
+            // Stealth lub Vanish (perwoll shadow magic:p)
+            if (GetSpellInfo()->SpellFamilyFlags[0] & (0x00400000 | 0x00000800))
             {
                 // Master of subtlety
-                if (AuraEffect const* aurEff = target->GetAuraEffectOfRankedSpell(31221, 0))
+                if (AuraEffect const* aurEff = target->GetAuraEffect(31223, EFFECT_0))
                 {
-                    if (!apply)
-                        target->CastSpell(target, 31666, true);
-                    else
-                    {
-                        int32 basepoints0 = aurEff->GetAmount();
+                    int32 basepoints0 = aurEff->GetAmount();
+                    if (!target->HasAura(31665))
                         target->CastCustomSpell(target, 31665, &basepoints0, NULL, NULL , true);
+                    
+                    if (Aura* mosAura = target->GetAura(31665))
+                    {
+                        int32 dura = apply ? -1 : 6*IN_MILLISECONDS;
+                        mosAura->SetMaxDuration(dura);
+                        mosAura->RefreshDuration();
                     }
                 }
                 // Overkill
                 if (target->HasAura(58426))
                 {
-                    if (!apply)
-                        target->CastSpell(target, 58428, true);
-                    else
+                    if (!target->HasAura(58427))
                         target->CastSpell(target, 58427, true);
+                    if (Aura* overkillAura = target->GetAura(58427))
+                    {
+                        int32 dura = apply ? -1 : 20*IN_MILLISECONDS;
+                        overkillAura->SetMaxDuration(dura);
+                        overkillAura->RefreshDuration();
+                    }
                 }
                 break;
             }
