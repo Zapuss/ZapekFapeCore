@@ -4632,8 +4632,8 @@ int32 Unit::GetTotalAuraModifierByAffectMaskForCaster(AuraType auratype, SpellIn
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
-        if (((*i)->GetCaster() == caster) && (*i)->IsAffectingSpell(affectedSpell))
-            modifier += (*i)->GetAmount();
+        if (((*i)->GetCaster()->GetGUID() == caster->GetGUID()) && (*i)->IsAffectingSpell(affectedSpell) && (*i)->GetAmount() > modifier)
+            modifier = (*i)->GetAmount();
     }
     return modifier;
 }
@@ -5191,6 +5191,15 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
         {
             switch (dummySpell->Id)
             {
+                case 85466: // Bane of Havoc aura aplied on caster
+                {
+                    Unit* bohTarget = triggeredByAura->GetCaster();
+                    if (!bohTarget || bohTarget->GetGUID() == victim->GetGUID() || !bohTarget->HasAura(80240))
+                        break;
+                    if (int32 bp0 = CalculatePctN(int32(damage), bohTarget->GetAuraEffect(80240, EFFECT_0, GetGUID())->GetAmount()))
+                        CastCustomSpell(bohTarget, 85455, &bp0, 0, 0, true);
+                    break;
+                }
                 // Bloodworms Health Leech
                 case 50453:
                 {
@@ -5953,8 +5962,9 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                 // Victorious
                 case 32216:
                 {
-                    RemoveAura(dummySpell->Id);
-                    return false;
+                    sLog->outString("Aura victorious jest obslugiwana w HnlDmAuPrc z procflaga %u", procFlag);
+                    //RemoveAura(dummySpell->Id);
+                    break;
                 }
                 // Improved Spell Reflection
                 case 59088:
@@ -7206,6 +7216,25 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
         {
             switch (dummySpell->Id)
             {
+                // Glyph of healing stream totem
+                case 55456:
+                {                   
+                    if (procSpell->Id == 5394)
+                    {
+                        sLog->outString("Spell %u has trigger glyph healing stream casted by %u", procSpell->Id, triggeredByAura->GetCasterGUID());
+                        Creature* totem = GetMap()->GetCreature(m_SummonSlot[3]);
+                        if (totem && totem->isTotem())
+                        {
+                            sLog->outString("Mam jebany totem, jego guid %u ", m_SummonSlot[3]);
+                            originalCaster = GetGUID(); // Nie wiem czy potrzebne
+                            totem->CastSpell(totem, 8185, true, castItem, triggeredByAura, originalCaster);
+                            return true;
+                        }
+                    }
+                    return false;
+                 
+                 }
+
                 // Earthen Power (Rank 1, 2)
                 case 51523:
                 case 51524:
@@ -11028,14 +11057,6 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
                         }
                     break;
                     case SPELLFAMILY_WARRIOR:
-                       // Victory Rush
-                       if (spellProto->SpellFamilyFlags[1] & 0x100)
-                       {
-                           // Glyph of Victory Rush
-                           if (AuraEffect const* aurEff = GetAuraEffect(58382, 0))
-                               crit_chance += aurEff->GetAmount();
-                           break;
-                       }
                     break;
                 }
             }
@@ -11059,6 +11080,7 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CRITICAL_CHANCE, crit_chance, NULL, victim);
 
     crit_chance = crit_chance > 0.0f ? crit_chance : 0.0f;
+   // sLog->outString("Spell %u has %f crit chance", spellProto->Id, crit_chance);
     if (roll_chance_f(crit_chance))
         return true;
     return false;
@@ -11589,7 +11611,7 @@ bool Unit::IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index) cons
         // Check for immune to application of harmful magical effects
         AuraEffectList const& immuneAuraApply = GetAuraEffectsByType(SPELL_AURA_MOD_IMMUNE_AURA_APPLY_SCHOOL);
         for (AuraEffectList::const_iterator iter = immuneAuraApply.begin(); iter != immuneAuraApply.end(); ++iter)
-            if (spellInfo->Dispel == DISPEL_MAGIC &&                                      // Magic debuff
+            if ((spellInfo->Dispel == DISPEL_MAGIC || spellInfo->Dispel == DISPEL_NONE) &&      // Magic debuff or none (e.g Cyclon)
                 ((*iter)->GetMiscValue() & spellInfo->GetSchoolMask()) &&  // Check school
                 !spellInfo->IsPositiveEffect(index))                                  // Harmful
                 return true;

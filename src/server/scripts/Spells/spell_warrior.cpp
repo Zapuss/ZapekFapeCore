@@ -138,14 +138,14 @@ class spell_warr_victory_rush : public SpellScriptLoader
             void CalculateDamage(SpellEffIndex effect)
             {
                 // Formula: AttackPower * BasePoints / 100
-                if (Unit* caster = GetCaster())
-                    SetHitDamage(int32(GetHitDamage() * caster->GetTotalAttackPowerValue(BASE_ATTACK) / 100));
+               // if (Unit* caster = GetCaster())
+               //    SetHitDamage(int32(GetHitDamage() * caster->GetTotalAttackPowerValue(BASE_ATTACK) / 100));
             }
 
             void HandleAfterHit()
             {
-                if (Unit* caster = GetCaster())
-                    caster->RemoveAurasDueToSpell(32216); // Remove Victorious aura
+              //  if (Unit* caster = GetCaster())
+               //     caster->RemoveAurasDueToSpell(32216); // Remove Victorious aura
             }
 
             void Register()
