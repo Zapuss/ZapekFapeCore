@@ -4632,8 +4632,8 @@ int32 Unit::GetTotalAuraModifierByAffectMaskForCaster(AuraType auratype, SpellIn
     AuraEffectList const& mTotalAuraList = GetAuraEffectsByType(auratype);
     for (AuraEffectList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
     {
-        if (((*i)->GetCaster() == caster) && (*i)->IsAffectingSpell(affectedSpell))
-            modifier += (*i)->GetAmount();
+        if (((*i)->GetCaster()->GetGUID() == caster->GetGUID()) && (*i)->IsAffectingSpell(affectedSpell) && (*i)->GetAmount() > modifier)
+            modifier = (*i)->GetAmount();
     }
     return modifier;
 }
