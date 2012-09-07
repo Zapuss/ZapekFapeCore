@@ -5953,8 +5953,9 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                 // Victorious
                 case 32216:
                 {
-                    RemoveAura(dummySpell->Id);
-                    return false;
+                    sLog->outString("Aura victorious jest obslugiwana w HnlDmAuPrc z procflaga %u", procFlag);
+                    //RemoveAura(dummySpell->Id);
+                    break;
                 }
                 // Improved Spell Reflection
                 case 59088:
@@ -11045,14 +11046,6 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
                         }
                     break;
                     case SPELLFAMILY_WARRIOR:
-                       // Victory Rush
-                       if (spellProto->SpellFamilyFlags[1] & 0x100)
-                       {
-                           // Glyph of Victory Rush
-                           if (AuraEffect const* aurEff = GetAuraEffect(58382, 0))
-                               crit_chance += aurEff->GetAmount();
-                           break;
-                       }
                     break;
                 }
             }

@@ -814,6 +814,12 @@ void Spell::EffectSchoolDMG(SpellEffIndex effIndex)
                             if (m_caster->HasAura(53232))                // Rank 2
                                 m_caster->CastSpell(m_caster, 54227, true);
                 }
+            case SPELLFAMILY_WARRIOR:
+            {
+                // Victory Rush
+                if (m_spellInfo->Id == 34428)
+                    damage = int32(m_caster->GetTotalAttackPowerValue(BASE_ATTACK) * 56 /100);
+            }
             case SPELLFAMILY_PALADIN:
             {
                 // Hammer of the Righteous
