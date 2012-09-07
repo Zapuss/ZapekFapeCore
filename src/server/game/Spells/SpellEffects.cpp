@@ -859,7 +859,7 @@ void Spell::EffectSchoolDMG(SpellEffIndex effIndex)
 
 void Spell::EffectDummy(SpellEffIndex effIndex)
 {
-    if (effectHandleMode != SPELL_EFFECT_HANDLE_HIT_TARGET)
+    if (effectHandleMode != SPELL_EFFECT_HANDLE_HIT_TARGET && effectHandleMode != SPELL_EFFECT_HANDLE_LAUNCH_TARGET)
         return;
 
     if (!unitTarget && !gameObjTarget && !itemTarget)
@@ -869,7 +869,8 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
     int32 bp = 0;
     bool triggered = true;
     SpellCastTargets targets;
-
+    if (effectHandleMode == SPELL_EFFECT_HANDLE_HIT_TARGET) 
+    {
     // selection by spell family
     switch (m_spellInfo->SpellFamilyName)
     {
@@ -1675,34 +1676,6 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                     }
                     break;
                 }
-                case 31789: // Righteous Defense (step 1)
-                {
-                    // Clear targets for eff 1
-                    for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
-                        ihit->effectMask &= ~(1<<1);
-
-                    // not empty (checked), copy
-                    Unit::AttackerSet attackers = unitTarget->getAttackers();
-
-                    // remove invalid attackers
-                    for (Unit::AttackerSet::iterator aItr = attackers.begin(); aItr != attackers.end();)
-                        if (!(*aItr)->IsValidAttackTarget(m_caster))
-                            attackers.erase(aItr++);
-                        else
-                            ++aItr;
-
-                    // selected from list 3
-                    uint32 maxTargets = std::min<uint32>(3, attackers.size());
-                    for (uint32 i = 0; i < maxTargets; ++i)
-                    {
-                        Unit* attacker = SelectRandomContainerElement(attackers);
-                        AddUnitTarget(attacker, 1 << 1);
-                        attackers.erase(attacker);
-                    }
-
-                    // now let next effect cast spell at each target.
-                    return;
-                }
             }
             break;
         }
@@ -1894,6 +1867,39 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
         sScriptMgr->OnDummyEffect(m_caster, m_spellInfo->Id, effIndex, unitTarget->ToCreature());
     else if (itemTarget)
         sScriptMgr->OnDummyEffect(m_caster, m_spellInfo->Id, effIndex, itemTarget);
+  }
+  
+  
+  if (effectHandleMode == SPELL_EFFECT_HANDLE_LAUNCH_TARGET)
+    {
+        if (m_spellInfo->Id == 31789) // Righteous Defense (step 1)
+        {
+            // Clear targets for eff 1
+            for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+            ihit->effectMask &= ~(1<<1);
+
+            // not empty (checked), copy
+            Unit::AttackerSet attackers = unitTarget->getAttackers();
+
+            // remove invalid attackers
+            for (Unit::AttackerSet::iterator aItr = attackers.begin(); aItr != attackers.end();)
+                if (!(*aItr)->IsValidAttackTarget(m_caster))
+                            attackers.erase(aItr++);
+                else
+                    ++aItr;
+
+            // selected from list 3
+            uint32 maxTargets = std::min<uint32>(3, attackers.size());
+            for (uint32 i = 0; i < maxTargets; ++i)
+            {
+                Unit* attacker = SelectRandomContainerElement(attackers);
+                AddUnitTarget(attacker, 1 << 1);
+                attackers.erase(attacker);
+            }
+            // now let next effect cast spell at each target.
+            return;
+        }
+    }
 }
 
 void Spell::EffectTriggerSpell(SpellEffIndex effIndex)
