@@ -1852,6 +1852,19 @@ void Aura::HandleAuraSpecificMods(AuraApplication const* aurApp, Unit* caster, b
                         caster->RemoveAurasDueToSpell(100001);
                 }
             }
+            // Bane of havoc
+            if (GetId() == 80240)
+                if (caster)
+                {   //WAZNE: Jest to aura, ktora caster zaklada na siebie; target, na ktory zakladany jest wlasciwy debuff,
+                    //jest traktowany jako originaCaster. Dzieki temu przy kazdym procu 
+                    //originalCaster(target BoHa) w HandleAuraDummyProc widnieje jako caster procuj¹cej aury(Id: 85466), 
+                    //co daje dostêp do jego wska¿nika.
+                    if (apply)
+                        caster->CastSpell(caster, 85466, true, 0, 0, target->GetGUID());
+                    else
+                        caster->RemoveAurasDueToSpell(85466);
+                }
+            
             break;
     }
 }
