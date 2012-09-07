@@ -7206,6 +7206,23 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
         {
             switch (dummySpell->Id)
             {
+                // Glyph of healing stream totem
+                case 55456:
+                {                   
+                    if (procSpell->Id == 5394)
+                    {
+                        Creature* totem = GetMap()->GetCreature(m_SummonSlot[3]);
+                        if (totem && totem->isTotem())
+                        {
+                            originalCaster = GetGUID(); // Nie wiem czy potrzebne
+                            totem->CastSpell(totem, 8185, true, castItem, triggeredByAura, originalCaster);
+                            return true;
+                        }
+                    }
+                    return false;
+                 
+                 }
+
                 // Earthen Power (Rank 1, 2)
                 case 51523:
                 case 51524:

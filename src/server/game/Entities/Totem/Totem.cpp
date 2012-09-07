@@ -122,11 +122,11 @@ void Totem::InitSummon()
                     CastSpell(this, GetSpell(1), true);
             }
             break;
-       // Elemental resistance casted by healing stream totem
+     /*  // Elemental resistance casted by healing stream totem
         case 8185:
             if (GetOwner()->HasAura(55456)) //Glyph of healing stream totem
 				CastSpell(this, GetSpell(1), true);
-            break;
+            break; */
         default:
             CastSpell(this, GetSpell(1), true);
             break;
