@@ -1715,6 +1715,7 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                         AddPctN(damage, aurEff->GetAmount());
                 }
                 m_caster->CastCustomSpell(unitTarget, 52042, &damage, 0, 0, true, 0, 0, m_originalCasterGUID);
+                sLog->outString("Jestem w EffectDummy z 52041 castuje 52042 przez castera %u oraz origin castera %u", m_caster->GetGUID(), m_originalCasterGUID);
                 return;
             }
             // Mana Spring Totem

@@ -7212,9 +7212,11 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                 {                   
                     if (procSpell->Id == 5394)
                     {
+                        sLog->outString("Spell %u has trigger glyph healing stream casted by %u", procSpell->Id, triggeredByAura->GetCasterGUID());
                         Creature* totem = GetMap()->GetCreature(m_SummonSlot[3]);
                         if (totem && totem->isTotem())
                         {
+                            sLog->outString("Mam jebany totem, jego guid %u ", m_SummonSlot[3]);
                             originalCaster = GetGUID(); // Nie wiem czy potrzebne
                             totem->CastSpell(totem, 8185, true, castItem, triggeredByAura, originalCaster);
                             return true;
@@ -11069,6 +11071,7 @@ bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMas
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CRITICAL_CHANCE, crit_chance, NULL, victim);
 
     crit_chance = crit_chance > 0.0f ? crit_chance : 0.0f;
+   // sLog->outString("Spell %u has %f crit chance", spellProto->Id, crit_chance);
     if (roll_chance_f(crit_chance))
         return true;
     return false;
