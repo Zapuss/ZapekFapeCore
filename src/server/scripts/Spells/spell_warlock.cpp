@@ -311,18 +311,15 @@ public:
             if (Unit* caster = GetCaster())
             {
                 int32 damage = int32(caster->CountPctFromMaxHealth(GetSpellInfo()->Effects[EFFECT_2].CalcValue()));
-                int32 mana = 0;
-
-                float multiplier = 1.2f;
+                int32 mana = damage + CalculatePctN(damage, 20);
 
                 // Should not appear in combat log
                 caster->ModifyHealth(-damage);
 
                 // Improved Life Tap mod
                 if (AuraEffect const* aurEff = caster->GetDummyAuraEffect(SPELLFAMILY_WARLOCK, 208, 0))
-                    multiplier += int32(aurEff->GetAmount() / 100);
+                    AddPctN(mana, aurEff->GetAmount());
 
-                mana = int32(damage * multiplier);
                 caster->CastCustomSpell(caster, 31818, &mana, NULL, NULL, false);
 
                 // Mana Feed
