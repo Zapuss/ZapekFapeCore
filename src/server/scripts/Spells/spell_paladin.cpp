@@ -599,6 +599,56 @@ class spell_pal_exorcism: public SpellScriptLoader
 	return new spell_pal_exorcism_SpellScript();
 	}
 };
+
+//Righteous Defense (31789)
+class spell_pal_righteous_defense : public SpellScriptLoader
+{
+    public:
+        spell_pal_righteous_defense() : SpellScriptLoader("spell_pal_righteous_defense") { }
+
+        class spell_pal_righteous_defense_SpellScript : public SpellScript
+        {
+            PrepareSpellScript(spell_pal_righteous_defense_SpellScript);
+            
+            Unit::AttackerSet attackers;
+            //bool Validate(SpellInfo const* spellEntry){return true;}
+            //bool Load(){return true;}
+            void HandleDummy(SpellEffIndex /*effIndex*/)
+            {
+                Unit* friendlyTarget = GetHitUnit();
+                attackers = friendlyTarget->getAttackers();
+                // remove invalid attackers
+                for (Unit::AttackerSet::iterator aItr = attackers.begin(); aItr != attackers.end();)
+                    if (!(*aItr)->IsValidAttackTarget(GetCaster()))
+                            attackers.erase(aItr++);
+                    else
+                        ++aItr;
+            }
+
+            void HandleTriggers(SpellEffIndex /*effIndex*/)
+            {
+                // selected from list 3
+                uint32 maxTargets = std::min<uint32>(3, attackers.size());
+                for (uint32 i = 0; i < maxTargets; ++i)
+                {
+                    Unit* attacker = SelectRandomContainerElement(attackers);
+                    GetCaster()->CastSpell(attacker, 31790, true);
+                    attackers.erase(attacker);
+                }
+            }
+
+            void Register()
+            {
+                OnEffectLaunchTarget += SpellEffectFn(spell_pal_righteous_defense_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                OnEffectLaunchTarget += SpellEffectFn(spell_pal_righteous_defense_SpellScript::HandleTriggers, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+            }
+        };
+
+        SpellScript* GetSpellScript() const
+        {
+            return new spell_pal_righteous_defense_SpellScript();
+        }
+};
 void AddSC_paladin_spell_scripts()
 {
     new spell_pal_ardent_defender();
@@ -611,4 +661,5 @@ void AddSC_paladin_spell_scripts()
     new spell_pal_word_of_glory();
     new spell_pal_selfless_healer();
 	new spell_pal_exorcism();
+    new spell_pal_righteous_defense();
 }

@@ -3660,7 +3660,7 @@ void Unit::RemoveAurasDueToSpellByDispel(uint32 spellId, uint32 dispellerSpellId
                         Unit* caster = aura->GetCaster();
                         if (!caster)
                             break;
-                        if (AuraEffect const* aurEff = aura->GetEffect(EFFECT_0))
+                        if (AuraEffect const* aurEff = aura->GetEffect(EFFECT_1))
                         {
                             int32 damage = aurEff->GetAmount() * 9;
                             // backfire damage and silence
