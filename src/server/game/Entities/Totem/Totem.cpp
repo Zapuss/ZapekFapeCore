@@ -89,54 +89,13 @@ void Totem::InitStats(uint32 duration)
 void Totem::InitSummon()
 {
     if (m_type == TOTEM_PASSIVE)
-    {
-        switch (GetSpell())
-        {
-            case 33663: // Earth Elemental Totem
-            case 32982: // Fire Elemental Totem
-            case 50461: // Anti-Magic Zone
-                CastSpell(this, GetSpell(), true);
-                break;
-            default:
-                AddAura(GetSpell(), this);
-                break;
-        }
-    }
-
-    // Some totems can have both instant effect and passive spell
-    switch (GetSpell(1))
-	{
-        case 0:
-            break;
-        //Totemic Wrath
-        case 77747:
-            if (GetOwner()->HasAura(77746)) //Totemic Wrath talent.
-                CastSpell(this, GetSpell(1), true);
-            break;
-        //Nature's Grasp
-        case 64695:
-            if (AuraEffect* aurEff = GetOwner()->GetAuraEffect(SPELL_AURA_DUMMY, SPELLFAMILY_SHAMAN, 20, 1))
-            {
-                int32 chance = aurEff->GetSpellInfo()->Effects[EFFECT_1].CalcValue();
-                if (roll_chance_i(chance))
-                    CastSpell(this, GetSpell(1), true);
-            }
-            break;
-     /*  // Elemental resistance casted by healing stream totem
-        case 8185:
-            if (GetOwner()->HasAura(55456)) //Glyph of healing stream totem
-				CastSpell(this, GetSpell(1), true);
-            break; */
-        default:
-            CastSpell(this, GetSpell(1), true);
-            break;
-	}
+        for(uint32 spellId, i = 0; spellId = GetSpell(i); i++)
+            CastSpell(this, spellId, false, NULL, NULL, GetOwnerGUID());  
 }
 
 void Totem::UnSummon()
 {
     CombatStop();
-    RemoveAurasDueToSpell(GetSpell());
 
     // clear owner's totem slot
     for (int i = SUMMON_SLOT_TOTEM; i < MAX_TOTEM_SLOT; ++i)
@@ -148,25 +107,13 @@ void Totem::UnSummon()
         }
     }
 
-    _owner->RemoveAurasDueToSpell(GetSpell());
-
-    //remove aura all party members too
+     //remove aura all party members too
     if (Player* owner = _owner->ToPlayer())
     {
         owner->SendAutoRepeatCancel(this);
 
         if (SpellInfo const* spell = sSpellMgr->GetSpellInfo(GetUInt32Value(UNIT_CREATED_BY_SPELL)))
             owner->SendCooldownEvent(spell, 0, NULL, false);
-
-        if (Group* group = owner->GetGroup())
-        {
-            for (GroupReference* itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
-            {
-                Player* target = itr->getSource();
-                if (target && group->SameSubGroup(owner, target))
-                    target->RemoveAurasDueToSpell(GetSpell());
-            }
-        }
     }
 
     AddObjectToRemoveList();

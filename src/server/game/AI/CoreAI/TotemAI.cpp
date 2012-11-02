@@ -93,7 +93,7 @@ TotemAI::UpdateAI(const uint32 /*diff*/)
 
         // attack
         me->SetInFront(victim);                         // client change orientation by self
-        me->CastSpell(victim, me->ToTotem()->GetSpell(), false);
+        me->CastSpell(victim, me->ToTotem()->GetSpell(), false, NULL, NULL, me->GetOwnerGUID());
     }
     else
         i_victimGuid = 0;
