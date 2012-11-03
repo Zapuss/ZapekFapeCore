@@ -5191,6 +5191,18 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
         {
             switch (dummySpell->Id)
             {
+                // Totemic Wrath talent
+                case 77746:
+                {
+                        Creature* totem = GetMap()->GetCreature(m_SummonSlot[SUMMON_SLOT_FIRE_TOTEM]);
+                        if (totem && totem->isTotem())
+                        {
+                            totem->CastSpell(totem, 77747, true, castItem, triggeredByAura, GetGUID());
+                            return true;
+                        }
+                        return false;
+                }
+
                 case 85466: // Bane of Havoc aura aplied on caster
                 {
                     Unit* bohTarget = triggeredByAura->GetCaster();
@@ -7216,25 +7228,30 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
         {
             switch (dummySpell->Id)
             {
-                // Glyph of healing stream totem
-                case 55456:
-                {                   
-                    if (procSpell->Id == 5394)
+                //Earth's Grasp Talent
+                case 51483:     //(Rank 1)
+                case 51485:     //(Rank 2)
+                {
+                    Creature* totem = GetMap()->GetCreature(m_SummonSlot[SUMMON_SLOT_EARTH_TOTEM]);
+                    if (totem && totem->isTotem())
                     {
-                        sLog->outString("Spell %u has trigger glyph healing stream casted by %u", procSpell->Id, triggeredByAura->GetCasterGUID());
-                        Creature* totem = GetMap()->GetCreature(m_SummonSlot[3]);
-                        if (totem && totem->isTotem())
-                        {
-                            sLog->outString("Mam jebany totem, jego guid %u ", m_SummonSlot[3]);
-                            originalCaster = GetGUID(); // Nie wiem czy potrzebne
-                            totem->CastSpell(totem, 8185, true, castItem, triggeredByAura, originalCaster);
-                            return true;
-                        }
+                        totem->CastSpell(totem, 64695, true, castItem, triggeredByAura, GetGUID());
+                        break;
                     }
                     return false;
-                 
-                 }
-
+                }
+                
+                // Glyph of healing stream totem
+                case 55456:
+                {
+                    Creature* totem = GetMap()->GetCreature(m_SummonSlot[SUMMON_SLOT_WATER_TOTEM]);
+                    if (totem && totem->isTotem())
+                    {
+                        totem->CastSpell(totem, 8185, true, castItem, triggeredByAura, GetGUID());
+                        break;
+                    }
+                    return false;
+                }
                 // Earthen Power (Rank 1, 2)
                 case 51523:
                 case 51524:
