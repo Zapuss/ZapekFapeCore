@@ -207,11 +207,11 @@ class spell_sha_earthbind_totem : public SpellScriptLoader
 
             void HandleEffectPeriodic(AuraEffect const* aurEff)
             {
-                Unit* target = GetTarget();
+                Unit* totem = GetTarget();
                 if (Unit* caster = aurEff->GetBase()->GetCaster())
                     if (AuraEffect* aur = caster->GetDummyAuraEffect(SPELLFAMILY_SHAMAN, 2289, 0))
                         if (roll_chance_i(aur->GetBaseAmount()))
-                            target->CastSpell(target, SHAMAN_TOTEM_SPELL_EARTHEN_POWER, true, NULL, aurEff);
+                            totem->CastSpell(totem, SHAMAN_TOTEM_SPELL_EARTHEN_POWER, true, NULL, aurEff, totem->GetOwnerGUID());
             }
 
             void Register()
