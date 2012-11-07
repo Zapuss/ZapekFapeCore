@@ -1685,36 +1685,23 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
             break;
         }
         case SPELLFAMILY_SHAMAN:
-            // Cleansing Totem Pulse
-            if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG_SHAMAN_TOTEM_EFFECTS && m_spellInfo->SpellIconID == 1673)
-            {
-                int32 bp1 = 1;
-                // Cleansing Totem Effect
-                if (unitTarget)
-                    m_caster->CastCustomSpell(unitTarget, 52025, NULL, &bp1, NULL, true, NULL, NULL, m_originalCasterGUID);
-                return;
-            }
+
             // Healing Stream Totem
             if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG_SHAMAN_HEALING_STREAM)
             {
                 if (!unitTarget)
                     return;
 
-                if (Unit* owner = m_caster->GetOwner())
+                if (m_triggeredByAuraSpell)
                 {
-                    if (m_triggeredByAuraSpell)
-                        damage = int32(owner->SpellHealingBonus(unitTarget, m_triggeredByAuraSpell, damage, HEAL));
-
-                    // Restorative Totems
-                    if (AuraEffect* dummy = owner->GetAuraEffect(SPELL_AURA_DUMMY, SPELLFAMILY_SHAMAN, 338, 1))
-                        AddPctN(damage, dummy->GetAmount());
-
-                    // Glyph of Healing Stream Totem
-                    if (AuraEffect const* aurEff = owner->GetAuraEffect(55456, EFFECT_0))
-                        AddPctN(damage, aurEff->GetAmount());
+                    // Loading caster level coeffs
+                    damage = m_triggeredByAuraSpell->Effects[0].CalcValue(GetCaster());
+                    // Calculating heal amount without target healing taken mods
+                    if (Unit* owner = m_caster->GetOwner())
+                        damage = int32(owner->SpellHealingBonus(NULL, m_spellInfo, damage, HEAL));
+                    // Casting healing spell 
+                    m_caster->CastCustomSpell(unitTarget, 52042, &damage, 0, 0, true);
                 }
-                m_caster->CastCustomSpell(unitTarget, 52042, &damage, 0, 0, true, 0, 0, m_originalCasterGUID);
-                sLog->outString("Jestem w EffectDummy z 52041 castuje 52042 przez castera %u oraz origin castera %u", m_caster->GetGUID(), m_originalCasterGUID);
                 return;
             }
             // Mana Spring Totem
