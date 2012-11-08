@@ -879,7 +879,7 @@ void Unit::CastSpell(Unit* victim, uint32 spellId, bool triggered, Item* castIte
 }
 
 void Unit::CastSpell(Unit* victim, uint32 spellId, TriggerCastFlags triggerFlags /*= TRIGGER_NONE*/, Item* castItem /*= NULL*/, AuraEffect const* triggeredByAura /*= NULL*/, uint64 originalCaster /*= 0*/)
-{
+{   
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
 
     if (!spellInfo)
@@ -11156,6 +11156,11 @@ uint32 Unit::SpellCriticalHealingBonus(SpellInfo const* spellProto, uint32 damag
 
 uint32 Unit::SpellHealingBonus(Unit* victim, SpellInfo const* spellProto, uint32 healamount, DamageEffectType damagetype, uint32 stack)
 {
+    // For totems get healing bonus from owner (statue isn't totem in fact)
+    if (GetTypeId() == TYPEID_UNIT && ToCreature()->isTotem())
+        if (Unit* owner = GetOwner())
+            return owner->SpellHealingBonus(victim, spellProto, healamount, damagetype, stack);
+    
     // no bonus for heal potions/bandages
     if (spellProto->SpellFamilyName == SPELLFAMILY_POTION)
         return healamount;
@@ -11394,42 +11399,38 @@ uint32 Unit::SpellHealingBonus(Unit* victim, SpellInfo const* spellProto, uint32
     }
 
     // Taken mods
-    // victim = NULL only in custom calculating cases.
-    if (victim)
+  
+    // Tenacity increase healing % taken
+    if (AuraEffect const* Tenacity = victim->GetAuraEffect(58549, 0))
+        AddPctN(TakenTotalMod, Tenacity->GetAmount());
+
+    // Healing taken percent
+    float minval = (float)victim->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
+    if (minval)
+        AddPctF(TakenTotalMod, minval);
+
+    float maxval = (float)victim->GetMaxPositiveAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
+    if (maxval)
+        AddPctF(TakenTotalMod, maxval);
+
+    if (damagetype == DOT)
     {
-        // Tenacity increase healing % taken
-        if (AuraEffect const* Tenacity = victim->GetAuraEffect(58549, 0))
-            AddPctN(TakenTotalMod, Tenacity->GetAmount());
+        // Healing over time taken percent
+        float minval_hot = (float)victim->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_HOT_PCT);
+        if (minval_hot)
+            AddPctF(TakenTotalMod, minval_hot);
 
-        // Healing taken percent
-        float minval = (float)victim->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
-        if (minval)
-            AddPctF(TakenTotalMod, minval);
-
-        float maxval = (float)victim->GetMaxPositiveAuraModifier(SPELL_AURA_MOD_HEALING_PCT);
-        if (maxval)
-            AddPctF(TakenTotalMod, maxval);
-
-        if (damagetype == DOT)
-        {
-            // Healing over time taken percent
-            float minval_hot = (float)victim->GetMaxNegativeAuraModifier(SPELL_AURA_MOD_HOT_PCT);
-            if (minval_hot)
-                AddPctF(TakenTotalMod, minval_hot);
-
-            float maxval_hot = (float)victim->GetMaxPositiveAuraModifier(SPELL_AURA_MOD_HOT_PCT);
-            if (maxval_hot)
-                AddPctF(TakenTotalMod, maxval_hot);
-        }
-
-        AuraEffectList const& mHealingGet= victim->GetAuraEffectsByType(SPELL_AURA_MOD_HEALING_RECEIVED);
-        for (AuraEffectList::const_iterator i = mHealingGet.begin(); i != mHealingGet.end(); ++i)
-            if (GetGUID() == (*i)->GetCasterGUID() && (*i)->IsAffectingSpell(spellProto))
-                AddPctN(TakenTotalMod, (*i)->GetAmount());
-
-        heal = (int32(heal) + TakenTotal) * TakenTotalMod;
+        float maxval_hot = (float)victim->GetMaxPositiveAuraModifier(SPELL_AURA_MOD_HOT_PCT);
+        if (maxval_hot)
+            AddPctF(TakenTotalMod, maxval_hot);
     }
 
+    AuraEffectList const& mHealingGet= victim->GetAuraEffectsByType(SPELL_AURA_MOD_HEALING_RECEIVED);
+    for (AuraEffectList::const_iterator i = mHealingGet.begin(); i != mHealingGet.end(); ++i)
+        if (GetGUID() == (*i)->GetCasterGUID() && (*i)->IsAffectingSpell(spellProto))
+            AddPctN(TakenTotalMod, (*i)->GetAmount());
+
+    heal = (int32(heal) + TakenTotal) * TakenTotalMod;
     return uint32(std::max(heal, 0.0f));
 }
 
@@ -11468,8 +11469,6 @@ int32 Unit::SpellBaseHealingBonus(SpellSchoolMask schoolMask)
 
 int32 Unit::SpellBaseHealingBonusForVictim(SpellSchoolMask schoolMask, Unit* victim)
 {
-    if (!victim)
-        return 0;
     int32 AdvertisedBenefit = 0;
     AuraEffectList const& mDamageTaken = victim->GetAuraEffectsByType(SPELL_AURA_MOD_HEALING);
     for (AuraEffectList::const_iterator i = mDamageTaken.begin(); i != mDamageTaken.end(); ++i)
