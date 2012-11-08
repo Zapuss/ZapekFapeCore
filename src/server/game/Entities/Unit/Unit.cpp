@@ -10888,10 +10888,16 @@ int32 Unit::SpellBaseDamageBonusForVictim(SpellSchoolMask schoolMask, Unit* vict
 
 bool Unit::isSpellCrit(Unit* victim, SpellInfo const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType) const
 {
-    //! Mobs can't crit with spells. Player Totems can
+    //! Mobs can't crit with spells. Player Totems have taken spell crit chance from owner
+    if (IS_CREATURE_GUID(GetGUID()))
+        if (isTotem())
+        {
+            if (Player* player = GetOwner()->ToPlayer())
+                return player->isSpellCrit(victim, spellProto, schoolMask, attackType);
+        }
     //! Fire Elemental (from totem) can too - but this part is a hack and needs more research
-    if (IS_CREATURE_GUID(GetGUID()) && !(isTotem() && IS_PLAYER_GUID(GetOwnerGUID())) && GetEntry() != 15438)
-        return false;
+        else if (GetEntry() != 15438)
+            return false;
 
     // not critting spell
     if ((spellProto->AttributesEx2 & SPELL_ATTR2_CANT_CRIT))
