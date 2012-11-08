@@ -1686,19 +1686,19 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
         }
         case SPELLFAMILY_SHAMAN:
 
-            // Healing Stream Totem
+            // Healing Stream Totem. We are in 52041.
             if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG_SHAMAN_HEALING_STREAM)
             {
                 if (!unitTarget)
                     return;
 
                 if (m_triggeredByAuraSpell)
-                {
+                {   
                     // Loading caster level coeffs
                     damage = m_triggeredByAuraSpell->Effects[0].CalcValue(GetCaster());
-                    // Calculating heal amount without target healing taken mods
+                    // Calculating heal amount
                     if (Unit* owner = m_caster->GetOwner())
-                        damage = int32(owner->SpellHealingBonus(NULL, m_spellInfo, damage, HEAL));
+                        damage = int32(owner->SpellHealingBonus(unitTarget, m_triggeredByAuraSpell, damage, HEAL));
                     // Casting healing spell 
                     m_caster->CastCustomSpell(unitTarget, 52042, &damage, 0, 0, true);
                 }
@@ -2662,6 +2662,10 @@ void Spell::EffectHeal(SpellEffIndex effIndex)
                 return;
             addhealth = (caster->GetTotalAttackPowerValue(BASE_ATTACK) + caster->SpellBaseHealingBonus(SPELL_SCHOOL_MASK_HOLY)) * damage / 100;
         }
+        
+        // Healing Stream totem. All calculations done in triggering dummy spell, just need rewrite that value to this.
+        else if (m_spellInfo->Id == 52042){}
+
         else
             addhealth = caster->SpellHealingBonus(unitTarget, m_spellInfo, addhealth, HEAL);
 

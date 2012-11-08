@@ -855,9 +855,9 @@ void Unit::CastSpell(SpellCastTargets const& targets, SpellInfo const* spellInfo
     }
 
     // TODO: this is a workaround and needs removal
-    if (!originalCaster && GetTypeId() == TYPEID_UNIT && ToCreature()->isTotem() && IsControlledByPlayer())
+    /*if (!originalCaster && GetTypeId() == TYPEID_UNIT && ToCreature()->isTotem() && IsControlledByPlayer())
         if (Unit* owner = GetOwner())
-            originalCaster=owner->GetGUID();
+            originalCaster=owner->GetGUID();*/
 
     // TODO: this is a workaround - not needed anymore, but required for some scripts :(
     if (!originalCaster && triggeredByAura)
