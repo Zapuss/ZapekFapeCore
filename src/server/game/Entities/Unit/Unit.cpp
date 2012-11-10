@@ -61,6 +61,9 @@
 
 #include <math.h>
 
+#define DBUG_S_FLTR 0
+#define DBUG_A_FLTR 0
+
 float baseMoveSpeed[MAX_MOVE_TYPE] =
 {
     2.5f,                  // MOVE_WALK
@@ -4822,7 +4825,9 @@ void Unit::SendSpellNonMeleeDamageLog(Unit* target, uint32 SpellID, uint32 Damag
 
 void Unit::ProcDamageAndSpell(Unit* victim, uint32 procAttacker, uint32 procVictim, uint32 procExtra, uint32 amount, WeaponAttackType attType, SpellInfo const* procSpell, SpellInfo const* procAura)
 {
-     // Not much to do if no flags are set.
+    if ((procSpell && DBUG_S_FLTR == procSpell->Id) || (DBUG_A_FLTR && !DBUG_S_FLTR))
+        sLog->outString("Sprawdzanie czy akcja triggeruje aury u %u, procSpell %u, procAttacker %u, procVictim %u", GetGUIDLow(), (procSpell ? procSpell->Id : 0), procAttacker, procVictim);
+    // Not much to do if no flags are set.
     if (procAttacker)
         ProcDamageAndSpellFor(false, victim, procAttacker, procExtra, attType, procSpell, amount, procAura);
     // Now go on with a victim's events'n'auras
@@ -11388,7 +11393,7 @@ uint32 Unit::SpellHealingBonus(Unit* victim, SpellInfo const* spellProto, uint32
         }
         DoneTotal += int32(DoneAdvertisedBenefit * coeff * factorMod);
     }
-
+    
     // use float as more appropriate for negative values and percent applying
     float heal = (int32(healamount) + DoneTotal) * DoneTotalMod;
     // apply spellmod to Done amount
@@ -14329,6 +14334,8 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
     // Fill procTriggered list
     for (AuraApplicationMap::const_iterator itr = GetAppliedAuras().begin(); itr!= GetAppliedAuras().end(); ++itr)
     {
+        if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && itr->first == DBUG_A_FLTR) || (itr->first == DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR))
+            sLog->outString("Unit %u, Spell %u: Tworzenie listy aur mogacych triggerowac - Rozpatrywana aura %u", GetGUIDLow(), (procSpell ? procSpell->Id : 0), itr->first);
         // Do not allow auras to proc from effect triggered by itself
         if (procAura && procAura->Id == itr->first)
             continue;
@@ -14338,8 +14345,17 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
         if (isVictim)
             procExtra &= ~PROC_EX_INTERNAL_REQ_FAMILY;
         SpellInfo const* spellProto = itr->second->GetBase()->GetSpellInfo();
-        if (!IsTriggeredAtSpellProcEvent(target, triggerData.aura, procSpell, procFlag, procExtra, attType, isVictim, active, triggerData.spellProcEvent))
+        if (!IsTriggeredAtSpellProcEvent(target, triggerData.aura, procSpell, procFlag, procExtra, attType, isVictim, active, triggerData.spellProcEvent))   
+        {
+            if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && itr->first == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && itr->first == DBUG_A_FLTR))
+                sLog->outString("Unit %u, Spell %u: Badanie dla aury(%u) wypadlo niepomyslnie", GetGUIDLow(), (procSpell ? procSpell->Id : 0), itr->first);
             continue;
+        }
+        else
+        {
+           if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && itr->first == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && itr->first == DBUG_A_FLTR))
+                sLog->outString("Unit %u, Spell %u: Badanie dla aury(%u) wypadlo pomyslnie", GetGUIDLow(), (procSpell ? procSpell->Id : 0), itr->first);
+        }
 
         // Triggered spells not triggering additional spells
         bool triggered = !(spellProto->AttributesEx3 & SPELL_ATTR3_CAN_PROC_WITH_TRIGGERED) ?
@@ -15219,6 +15235,9 @@ bool Unit::InitTamedPet(Pet * pet, uint8 level, uint32 spell_id)
 bool Unit::IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, SpellInfo const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const* & spellProcEvent)
 {
     SpellInfo const* spellProto = aura->GetSpellInfo();
+    
+    if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR))
+        sLog->outString("Unit %u, aura %u, procSpell %u: Sprawdzanie czy akcja trigeruje te aure:", GetGUIDLow(), (spellProto ? spellProto->Id : 0), (procSpell ? procSpell->Id : 0));
 
     // let the aura be handled by new proc system if it has new entry
     if (sSpellMgr->GetSpellProcEntry(spellProto->Id))
@@ -15235,18 +15254,27 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, SpellInfo const
         EventProcFlag = spellProto->ProcFlags;       // else get from spell proto
     // Continue if no trigger exist
     if (!EventProcFlag)
+    {
+        if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR))
+            sLog->outString("Unit %u, aura %u: ProcFlagi dla aury wczytane NIEpomyslnie!.", GetGUIDLow(), (spellProto ? spellProto->Id : 0));
         return false;
-
+    }
     // Additional checks for triggered spells (ignore trap casts)
     if (procExtra & PROC_EX_INTERNAL_TRIGGERED && !(procFlag & PROC_FLAG_DONE_TRAP_ACTIVATION))
     {
         if (!(spellProto->AttributesEx3 & SPELL_ATTR3_CAN_PROC_WITH_TRIGGERED))
             return false;
     }
-
+    
+    if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR))
+        sLog->outString("Unit %u, aura %u: ProcFlagi dla aury wczytane pomyslnie(%u). Czy procuje dla danej akcji?:", GetGUIDLow(), (spellProto ? spellProto->Id : 0), EventProcFlag);
     // Check spellProcEvent data requirements
     if (!sSpellMgr->IsSpellProcEventCanTriggeredBy(spellProcEvent, EventProcFlag, procSpell, procFlag, procExtra, active))
+    {
+        if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR))
+            sLog->outString("Unit %u, aura %u: Aura nie procuje dla tej akcji", GetGUIDLow(), (spellProto ? spellProto->Id : 0));
         return false;
+    }
     // In most cases req get honor or XP from kill
     if (EventProcFlag & PROC_FLAG_KILL && GetTypeId() == TYPEID_PLAYER)
     {
@@ -15316,6 +15344,8 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, SpellInfo const
     {
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CHANCE_OF_SUCCESS, chance, NULL, victim);
     }
+    if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR))
+        sLog->outString("Unit %u, aura %u: Aura moze procowac z badana akcja, trwa losowanie dla szansy %f", GetGUIDLow(), (spellProto ? spellProto->Id : 0), chance);
     return roll_chance_f(chance);
 }
 
