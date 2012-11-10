@@ -1230,12 +1230,16 @@ enum ReactiveType
 };
 
 #define MAX_REACTIVE 3
-#define SUMMON_SLOT_PET     0
-#define SUMMON_SLOT_TOTEM   1
-#define MAX_TOTEM_SLOT      5
-#define SUMMON_SLOT_MINIPET 5
-#define SUMMON_SLOT_QUEST   6
-#define MAX_SUMMON_SLOT     7
+#define SUMMON_SLOT_PET         0
+#define SUMMON_SLOT_TOTEM       1
+#define SUMMON_SLOT_FIRE_TOTEM  1
+#define SUMMON_SLOT_EARTH_TOTEM 2
+#define SUMMON_SLOT_WATER_TOTEM 3
+#define SUMMON_SLOT_AIR_TOTEM   4
+#define MAX_TOTEM_SLOT          5
+#define SUMMON_SLOT_MINIPET     5
+#define SUMMON_SLOT_QUEST       6
+#define MAX_SUMMON_SLOT         7
 
 #define MAX_GAMEOBJECT_SLOT 4
 

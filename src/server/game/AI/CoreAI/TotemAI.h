@@ -26,6 +26,9 @@
 class Creature;
 class Totem;
 
+#define FLAME_SHOCK 8050
+#define STORMSTRIKE 17364
+
 class TotemAI : public CreatureAI
 {
     public:
@@ -42,4 +45,25 @@ class TotemAI : public CreatureAI
     private:
         uint64 i_victimGuid;
 };
+
+class SentryTotemEnemyCheck
+{
+public:
+    SentryTotemEnemyCheck(Unit* totem, float max_range, uint64 casterGUID = 0): _max_range(max_range), _totem(totem),
+        _auraCheckerSpellOne(true, FLAME_SHOCK, casterGUID), _auraCheckerSpellTwo(true, STORMSTRIKE, casterGUID){}
+
+    bool operator()(Unit* unit)
+    {
+        if (_totem->IsWithinDistInMap(unit, _max_range))
+            return (_auraCheckerSpellOne(unit) || _auraCheckerSpellTwo(unit));
+        return false;
+    }
+
+private:
+   float _max_range;
+   Trinity::UnitAuraCheck _auraCheckerSpellOne;
+   Trinity::UnitAuraCheck _auraCheckerSpellTwo;
+   Unit* _totem;
+};
+
 #endif

@@ -2207,7 +2207,6 @@ TempSummon* Map::SummonCreature(uint32 entry, Position const& pos, SummonPropert
     summon->InitSummon();
 
     //ObjectAccessor::UpdateObjectVisibility(summon);
-
     return summon;
 }
 

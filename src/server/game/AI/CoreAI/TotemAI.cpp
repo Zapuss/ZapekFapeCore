@@ -78,11 +78,39 @@ TotemAI::UpdateAI(const uint32 /*diff*/)
     if (!victim ||
         !victim->isTargetableForAttack() || !me->IsWithinDistInMap(victim, max_range) ||
         me->IsFriendlyTo(victim) || !me->canSeeOrDetect(victim))
+            victim = NULL;
+    
+    // Find new victim if cleared above or try find out with specific auras
+    if (!victim || !(victim->HasAura(FLAME_SHOCK) || victim->HasAura(STORMSTRIKE)))
     {
-        victim = NULL;
-        Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, me, max_range);
-        Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
-        me->VisitNearbyObject(max_range, checker);
+        Unit* owner = me->GetOwner();
+        SentryTotemEnemyCheck aurachecker(me->ToUnit(), max_range, owner->GetGUID());
+        
+        //Step 1. Check target of owner 
+        if (Unit* ownerVictim = owner->getVictim())
+            if (aurachecker(ownerVictim))
+                victim = ownerVictim;
+
+        //Step 2. Try find victim in owner attacker list
+        if (!victim || !(victim->HasAura(FLAME_SHOCK) || victim->HasAura(STORMSTRIKE)))
+        {
+            Unit::AttackerSet attackers = owner->getAttackers();
+            Unit::AttackerSet::iterator itr = find_if(attackers.begin(), attackers.end(), aurachecker);
+            if (itr != attackers.end())
+                victim = *itr;
+        }
+        //Step 3. No enemies with stormstrike or flame shock. Take target of owner or other random if had have not victim at start
+        if (!victim)
+           if (Unit* attacker = owner->getAttackerForHelper())
+               victim = attacker;
+
+        //Still no target? Lets roast creeps!
+        if (!victim)
+        {
+            Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, me, max_range);
+            Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
+            me->VisitNearbyObject(max_range, checker);
+        }
     }
 
     // If have target
@@ -93,7 +121,7 @@ TotemAI::UpdateAI(const uint32 /*diff*/)
 
         // attack
         me->SetInFront(victim);                         // client change orientation by self
-        me->CastSpell(victim, me->ToTotem()->GetSpell(), false);
+        me->CastSpell(victim, me->ToTotem()->GetSpell(), false, NULL, NULL, me->GetOwnerGUID());
     }
     else
         i_victimGuid = 0;

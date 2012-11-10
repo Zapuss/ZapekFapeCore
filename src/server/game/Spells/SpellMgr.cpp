@@ -3681,6 +3681,13 @@ void SpellMgr::LoadSpellCustomAttr()
                 spellInfo->Effects[0].TriggerSpell = 86698;
                 spellInfo->Effects[0].TargetA = TARGET_UNIT_CASTER;
                 break;
+            case 16187: // Soothing Rains(Rank 1) - bonus for Healing Stream Totem
+            case 16205: // (Rank 2)
+                spellInfo->Effects[0].Effect = SPELL_EFFECT_APPLY_AURA;
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_ADD_PCT_MODIFIER;
+                spellInfo->Effects[0].MiscValue = SPELLMOD_DAMAGE;
+                spellInfo->Effects[0].SpellClassMask = flag96(0x00002000, 0x00000000, 0x00000000);
+                break;
             default:
                 break;
         }
