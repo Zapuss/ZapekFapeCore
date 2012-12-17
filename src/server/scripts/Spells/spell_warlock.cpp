@@ -468,7 +468,41 @@ public:
         return new spell_warl_glyph_of_fear_AuraScript();
     }
 };
+// 19647 Spell Lock
+class spell_warl_spell_lock : public SpellScriptLoader
+{
+public:
+    spell_warl_spell_lock() : SpellScriptLoader("spell_warl_spell_lock") { }
 
+    class spell_warl_spell_lock_SpellScript : public SpellScript
+    {
+        PrepareSpellScript(spell_warl_spell_lock_SpellScript)
+
+        // Need prevent trigger silencing spell becouse in skyfire effectTriggerSpell is handled before effectInterruptCast
+        // silenced unit can't cast => interrupt never works...
+        void HandleEffLaunch(SpellEffIndex effIndex)
+        {
+            PreventHitDefaultEffect(EFFECT_1);
+        }
+
+        void HandleAfterHit()
+        {
+            const SpellInfo* spellinfo = GetSpellInfo();
+            GetCaster()->CastSpell(GetTargetUnit(), spellinfo->Effects[EFFECT_1].TriggerSpell, true);
+        }
+
+        void Register()
+        {
+            OnEffectLaunch += SpellEffectFn(spell_warl_spell_lock_SpellScript::HandleEffLaunch, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+            AfterHit += SpellHitFn(spell_warl_spell_lock_SpellScript::HandleAfterHit);
+        }
+    };
+
+    SpellScript* GetSpellScript() const
+    {
+        return new spell_warl_spell_lock_SpellScript();
+    }
+};
 void AddSC_warlock_spell_scripts()
 {
     new spell_warl_banish();
@@ -480,4 +514,5 @@ void AddSC_warlock_spell_scripts()
     new spell_warl_fear();
     new spell_warl_drain_life();
 	new spell_warl_glyph_of_fear();
+    new spell_warl_spell_lock();
 }
