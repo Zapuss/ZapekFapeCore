@@ -28,6 +28,9 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 
+#define FLAME_SHOCK 8050
+#define STORMSTRIKE 17364
+
 int
 TotemAI::Permissible(const Creature* creature)
 {
@@ -80,33 +83,34 @@ TotemAI::UpdateAI(const uint32 /*diff*/)
         me->IsFriendlyTo(victim) || !me->canSeeOrDetect(victim)))
         {
             Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, me, max_range);
-            Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, tmpvictim, u_check);
+            Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
             me->VisitNearbyObject(max_range, checker);
+            tmpvictim = victim;
         }
     else if(!(victim->HasAura(FLAME_SHOCK, me->GetOwnerGUID()) || victim->HasAura(STORMSTRIKE, me->GetOwnerGUID())))
         tmpvictim = victim;
 
     Unit* owner = me->GetOwner();
-    // looking for attacker with specific auras, do only when victim in radius and current victim has no aura
+    // looking for attacker with specific auras, do only if new victim found in radius or current victim has no aura
     if (owner && tmpvictim)
     {
-        if (Unit* ownervictim = owner->getAttackerForHelper())
+        if (Unit* ownervictim = owner->getVictim())
         {
-            Unit::AttackerSet attackers = owner->getAttackers();
-            Unit::AttackerSet::iterator itr;
-            for (itr = attackers.begin(); itr != attackers.end(); ++itr)
+            //Owner's target is priority
+            if (me->IsWithinDistInMap(ownervictim, max_range) && (ownervictim->HasAura(FLAME_SHOCK, owner->GetGUID()) || ownervictim->HasAura(STORMSTRIKE, owner->GetGUID())))
+                victim = ownervictim;
+            else
             {
-                Unit* attacker = *itr;
-                if (!me->IsWithinDistInMap(attacker, max_range) 
-                    || !(attacker->HasAura(FLAME_SHOCK, owner->GetGUID()) || attacker->HasAura(STORMSTRIKE, owner->GetGUID())))
-                    attackers.erase(itr);
-                else if (attacker->GetGUID() == ownervictim->GetGUID())
-                    break;
+                Unit::AttackerSet attackers = owner->getAttackers();
+                for (Unit::AttackerSet::iterator itr = attackers.begin(); itr != attackers.end(); ++itr)
+                {
+                    tmpvictim = *itr;
+                    if (me->IsWithinDistInMap(tmpvictim, max_range) && 
+                       (tmpvictim->HasAura(FLAME_SHOCK, owner->GetGUID()) || tmpvictim->HasAura(STORMSTRIKE, owner->GetGUID())))
+                        victim = tmpvictim;
+                }
             }
-            if (!attackers.empty())
-                tmpvictim = (*itr);
         }
-        victim = tmpvictim;
     }
 
     // If have target

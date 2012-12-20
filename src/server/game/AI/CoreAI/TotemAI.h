@@ -26,9 +26,6 @@
 class Creature;
 class Totem;
 
-#define FLAME_SHOCK 8050
-#define STORMSTRIKE 17364
-
 class TotemAI : public CreatureAI
 {
     public:
