@@ -7497,13 +7497,22 @@ void Spell::EffectTitanGrip(SpellEffIndex /*effIndex*/)
         m_caster->ToPlayer()->SetCanTitanGrip(true);
 }
 
-void Spell::EffectRedirectThreat(SpellEffIndex /*effIndex*/)
+void Spell::EffectRedirectThreat(SpellEffIndex effIndex)
 {
     if (effectHandleMode != SPELL_EFFECT_HANDLE_HIT_TARGET)
         return;
 
     if (unitTarget)
-        m_caster->SetReducedThreatPercent((uint32)damage, unitTarget->GetGUID());
+    {
+        time_t expirationTime = m_spellInfo->Effects[effIndex].MiscValue/1000;
+        //expirationTime = 0 is for permament threat
+        if (expirationTime)
+            expirationTime += time(NULL);
+        sLog->outString("Zakladam redirect target, jest %i, zakonczenie %i",int32(time(NULL)), int32(expirationTime));
+        //Safetly reset pct threat for prohibit unscrypted spells from bugging
+        //set it in dummy effect of spell
+        m_caster->SetRedirectThreat(0, unitTarget->GetGUID(), expirationTime);
+    }
 }
 
 void Spell::EffectGameObjectDamage(SpellEffIndex /*effIndex*/)

@@ -2166,13 +2166,16 @@ class Unit : public WorldObject
         uint32 GetModelForForm(ShapeshiftForm form);
         uint32 GetModelForTotem(PlayerTotemType totemType);
 
-        void SetReducedThreatPercent(uint32 pct, uint64 guid)
+        void SetRedirectThreat(int32 pct, uint64 guid, time_t expirationTime)
         {
-            m_reducedThreatPercent = pct;
-            m_misdirectionTargetGUID = guid;
+            m_redirectThreatPercent = pct;
+            m_redirectTargetGUID = guid;
+            m_redirectTerminationTime = expirationTime;
         }
-        uint32 GetReducedThreatPercent() { return m_reducedThreatPercent; }
-        Unit* GetMisdirectionTarget() { return m_misdirectionTargetGUID ? GetUnit(*this, m_misdirectionTargetGUID) : NULL; }
+        void SetRedirectThreatPercent(int32 pct) { m_redirectThreatPercent = pct; }
+        int32 GetRedirectThreatPercent() const { return m_redirectThreatPercent; }
+        Unit* GetRedirectThreatTarget() { return m_redirectTargetGUID ? GetUnit(*this, m_redirectTargetGUID) : NULL; }
+        time_t GetRedirectTerminationTime() const { return m_redirectTerminationTime; }
 
         bool IsAIEnabled, NeedChangeAI;
         bool CreateVehicleKit(uint32 id, uint32 creatureEntry);
@@ -2399,8 +2402,9 @@ class Unit : public WorldObject
 
         ComboPointHolderSet m_ComboPointHolders;
 
-        uint32 m_reducedThreatPercent;
-        uint64 m_misdirectionTargetGUID;
+        int32 m_redirectThreatPercent;
+        uint64 m_redirectTargetGUID;
+        time_t m_redirectTerminationTime;
 
         bool m_cleanupDone; // lock made to not add stuff after cleanup before delete
         bool m_duringRemoveFromWorld; // lock made to not add stuff after begining removing from world

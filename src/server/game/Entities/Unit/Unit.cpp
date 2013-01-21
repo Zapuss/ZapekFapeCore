@@ -237,8 +237,9 @@ _vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), mo
         m_speed_rate[i] = 1.0f;
 
     m_charmInfo = NULL;
-    m_reducedThreatPercent = 0;
-    m_misdirectionTargetGUID = 0;
+    m_redirectThreatPercent = 0;
+    m_redirectTargetGUID = 0;
+    m_redirectTerminationTime = 0;
 
     // remove aurastates allowing special moves
     for (uint8 i = 0; i < MAX_REACTIVE; ++i)
@@ -329,8 +330,12 @@ void Unit::Update(uint32 p_time)
     // Having this would prevent spells from being proced, so let's crash
     ASSERT(!m_procDeep);
 
-    if (CanHaveThreatList() && getThreatManager().isNeedUpdateToClient(p_time))
-        SendThreatListUpdate();
+    if (CanHaveThreatList())
+    {
+        getThreatManager().updateTempThreat();
+        if(getThreatManager().isNeedUpdateToClient(p_time))
+            SendThreatListUpdate();
+    }
 
     // update combat timer only for players and pets (only pets with PetAI)
     if (isInCombat() && (GetTypeId() == TYPEID_PLAYER || (ToCreature()->isPet() && IsControlledByPlayer())))
