@@ -137,7 +137,6 @@ void HostileReference::fireStatusChanged(ThreatRefStatusChangeEvent& threatRefSt
 void HostileReference::addThreat(float modThreat)
 {
     iThreat += modThreat;
-    sLog->outString("Dodaje THREAT o wartosci %f w Hostile Reference unitowi %u", modThreat, GUID_LOPART(getUnitGuid()));
     // the threat is changed. Source and target unit have to be available
     // if the link was cut before relink it again
     if (!isOnline())
@@ -174,7 +173,6 @@ void HostileReference::updateTempThreatMap()
         ++itr;
     if (itr != iTempThreatMap.end() && itr->first <= time(NULL))
     {
-        sLog->outString("Update(jest time %i): Usuwam temp threat o czasie %i, dotyczacego %u",int32(time(NULL)), int32(itr->first), GUID_LOPART(getUnitGuid()));
         resetTempThreat(itr->first);
         updateTempThreatMap();
     }
@@ -452,7 +450,6 @@ void ThreatManager::doAddThreat(Unit* victim, float threat)
         if (Unit* redirectTarget = victim->GetRedirectThreatTarget())
         {
             float reducedThreat = CalculatePctN(threat, victim->GetRedirectThreatPercent());
-            sLog->outString("1.doAddThreat: %u ma przekierowywany threat, calosc threatu wynosi %f", victim->GetGUIDLow(), reducedThreat);
             if (reducedThreat)
             {
                 threat -= reducedThreat;
@@ -460,8 +457,7 @@ void ThreatManager::doAddThreat(Unit* victim, float threat)
                 {
                     // looking for reference
                     if (HostileReference* ref = _addThreat(redirectTarget, 0.0f))
-                    {sLog->outString("2.doAddThreat: znalazlem referencje dla %u, przekierowuje na niego threat o wartosci %f", redirectTarget->GetGUIDLow(), reducedThreat);
-                    ref->addTempThreat(reducedThreat, time(NULL) + duration);}
+                        ref->addTempThreat(reducedThreat, time(NULL) + duration);
                 }
                     // else threat is permament
                 else

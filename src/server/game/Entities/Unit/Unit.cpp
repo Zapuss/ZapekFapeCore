@@ -6671,7 +6671,6 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                     {
                         if (!redirected->HasAura(57933))
                         {
-                            sLog->outString("Tricks of trade: Dodaje aure misTargetowi");
                             CastSpell(redirected, 57933, true);
                             SetRedirectThreatPercent(dummySpell->Effects[0].BasePoints);
                         }
@@ -6814,7 +6813,6 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                         if (!redirected->HasAura(35079))
                         {
                             CastSpell(redirected, 35079, true);
-                            sLog->outString("Misdirection: Dodaje aure misTargetowi");
                             SetRedirectThreatPercent(dummySpell->Effects[0].BasePoints);
                         }
                     }
@@ -15296,7 +15294,7 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, SpellInfo const
     }
     
     if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR))
-        sLog->outString("Unit %u, aura %u: ProcFlagi dla aury wczytane pomyslnie(%u). Czy procuje dla danej akcji?:", GetGUIDLow(), (spellProto ? spellProto->Id : 0), EventProcFlag);
+        sLog->outString("Unit %u, aura %u: ProcFlagi dla aury wczytane pomyslnie(%u). Czy procuje dla danej akcji(proc flagi tej akcji %u)?:", GetGUIDLow(), (spellProto ? spellProto->Id : 0), EventProcFlag, procFlag);
     // Check spellProcEvent data requirements
     if (!sSpellMgr->IsSpellProcEventCanTriggeredBy(spellProcEvent, EventProcFlag, procSpell, procFlag, procExtra, active))
     {

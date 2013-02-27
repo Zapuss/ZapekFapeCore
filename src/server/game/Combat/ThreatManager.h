@@ -80,7 +80,6 @@ class HostileReference : public Reference<Unit, ThreatManager>
                 iTempThreatMap.insert(std::pair<time_t, float>(expirationTime, threat));
             else
                 iTempThreatMap[expirationTime] += threat;
-            sLog->outString("3.Dodaje TEMPthreat o wartosci %f w Hostile Reference unitowi %u", threat, GUID_LOPART(getUnitGuid()));
             addThreat(threat);
         }
 

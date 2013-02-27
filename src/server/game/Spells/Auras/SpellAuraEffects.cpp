@@ -4727,10 +4727,7 @@ void AuraEffect::HandleModDamagePercentDone(AuraApplication const* aurApp, uint8
     if (!apply)
     {
         if (m_spellInfo->Id == 57933)//Tricks of the Trade
-        {
-            sLog->outString("Tricks of trade: Usuwam aure misdirect casterowi");
             GetBase()->GetCaster()->RemoveAura(57934);
-        }
     }
 }
 
@@ -5357,12 +5354,8 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                                 if (Unit* mistarget = caster->GetRedirectThreatTarget())
                                 {
                                     if (caster->HasAura(56829) && mistarget->isPet() && mistarget->GetOwnerGUID() == caster->GetGUID())
-                                    {
-                                        sLog->outString("Glyph of Misdirection: RESET");
                                         caster->ToPlayer()->RemoveSpellCooldown(34477, true);
-                                    }
                                 }
-                                sLog->outString("Misdirection: Usuwam aure misdirection z castera");
                                 caster->SetRedirectThreat(0,0,0);
                                 break;
                             }
@@ -5376,7 +5369,6 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                             case 57934:
                             {
                                 GetBase()->GetCaster()->SetRedirectThreat(0,0,0);
-                                sLog->outString("Tricki: Usuwam aure misdirection z castera");
                                 break;
                             }
                         }

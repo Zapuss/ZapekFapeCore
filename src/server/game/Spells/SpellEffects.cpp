@@ -7507,7 +7507,6 @@ void Spell::EffectRedirectThreat(SpellEffIndex effIndex)
         //durationTime = 0 is for permament threat
         int32 durationTime = m_spellInfo->Effects[effIndex].MiscValue/1000;
 
-        sLog->outString("Zakladam redirect target, jest %i",int32(time(NULL)));
         //Safetly reset pct threat for prohibit unscrypted spells from bugging
         //set it in dummy effect of spells
         m_caster->SetRedirectThreat(0, unitTarget->GetGUID(), durationTime);
