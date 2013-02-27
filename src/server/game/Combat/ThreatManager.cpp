@@ -456,12 +456,12 @@ void ThreatManager::doAddThreat(Unit* victim, float threat)
             if (reducedThreat)
             {
                 threat -= reducedThreat;
-                if (victim->GetRedirectTerminationTime())
+                if (int32 duration = victim->GetRedirectThreatDuration())
                 {
-                    // lookiing for reference
+                    // looking for reference
                     if (HostileReference* ref = _addThreat(redirectTarget, 0.0f))
                     {sLog->outString("2.doAddThreat: znalazlem referencje dla %u, przekierowuje na niego threat o wartosci %f", redirectTarget->GetGUIDLow(), reducedThreat);
-                    ref->addTempThreat(reducedThreat, victim->GetRedirectTerminationTime());}
+                    ref->addTempThreat(reducedThreat, time(NULL) + duration);}
                 }
                     // else threat is permament
                 else

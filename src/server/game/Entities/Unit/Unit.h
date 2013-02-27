@@ -2166,16 +2166,16 @@ class Unit : public WorldObject
         uint32 GetModelForForm(ShapeshiftForm form);
         uint32 GetModelForTotem(PlayerTotemType totemType);
 
-        void SetRedirectThreat(int32 pct, uint64 guid, time_t expirationTime)
+        void SetRedirectThreat(int32 pct, uint64 guid, int32 duration)
         {
             m_redirectThreatPercent = pct;
             m_redirectTargetGUID = guid;
-            m_redirectTerminationTime = expirationTime;
+            m_redirectThreatDuration = duration;
         }
         void SetRedirectThreatPercent(int32 pct) { m_redirectThreatPercent = pct; }
         int32 GetRedirectThreatPercent() const { return m_redirectThreatPercent; }
         Unit* GetRedirectThreatTarget() { return m_redirectTargetGUID ? GetUnit(*this, m_redirectTargetGUID) : NULL; }
-        time_t GetRedirectTerminationTime() const { return m_redirectTerminationTime; }
+        int32 GetRedirectThreatDuration() const { return m_redirectThreatDuration; }
 
         bool IsAIEnabled, NeedChangeAI;
         bool CreateVehicleKit(uint32 id, uint32 creatureEntry);
@@ -2404,7 +2404,7 @@ class Unit : public WorldObject
 
         int32 m_redirectThreatPercent;
         uint64 m_redirectTargetGUID;
-        time_t m_redirectTerminationTime;
+        int32 m_redirectThreatDuration;
 
         bool m_cleanupDone; // lock made to not add stuff after cleanup before delete
         bool m_duringRemoveFromWorld; // lock made to not add stuff after begining removing from world

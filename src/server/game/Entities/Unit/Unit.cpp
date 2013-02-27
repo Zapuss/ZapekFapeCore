@@ -239,7 +239,7 @@ _vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), mo
     m_charmInfo = NULL;
     m_redirectThreatPercent = 0;
     m_redirectTargetGUID = 0;
-    m_redirectTerminationTime = 0;
+    m_redirectThreatDuration = 0;
 
     // remove aurastates allowing special moves
     for (uint8 i = 0; i < MAX_REACTIVE; ++i)

@@ -7504,14 +7504,13 @@ void Spell::EffectRedirectThreat(SpellEffIndex effIndex)
 
     if (unitTarget)
     {
-        time_t expirationTime = m_spellInfo->Effects[effIndex].MiscValue/1000;
-        //expirationTime = 0 is for permament threat
-        if (expirationTime)
-            expirationTime += time(NULL);
-        sLog->outString("Zakladam redirect target, jest %i, zakonczenie %i",int32(time(NULL)), int32(expirationTime));
+        //durationTime = 0 is for permament threat
+        int32 durationTime = m_spellInfo->Effects[effIndex].MiscValue/1000;
+
+        sLog->outString("Zakladam redirect target, jest %i",int32(time(NULL)));
         //Safetly reset pct threat for prohibit unscrypted spells from bugging
-        //set it in dummy effect of spell
-        m_caster->SetRedirectThreat(0, unitTarget->GetGUID(), expirationTime);
+        //set it in dummy effect of spells
+        m_caster->SetRedirectThreat(0, unitTarget->GetGUID(), durationTime);
     }
 }
 
