@@ -6663,6 +6663,21 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                     triggered_spell_id = 32747;
                     break;
                 }
+                //Tricks of the Trade
+                case 57934:
+                {
+                    // Apply aura on first attack
+                    if (Unit* redirected = GetRedirectThreatTarget())
+                    {
+                        if (!redirected->HasAura(57933))
+                        {
+                            sLog->outString("Tricks of trade: Dodaje aure misTargetowi");
+                            CastSpell(redirected, 57933, true);
+                            SetRedirectThreatPercent(dummySpell->Effects[0].BasePoints);
+                        }
+                    }
+                    break;
+                }
             }
 
             switch (dummySpell->SpellIconID)
@@ -6790,6 +6805,21 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
 
             switch (dummySpell->Id)
             {
+                // Misdirection
+                case 34477:
+                {
+                    // Apply aura on first attack
+                    if (Unit* redirected = GetRedirectThreatTarget())
+                    {
+                        if (!redirected->HasAura(35079))
+                        {
+                            CastSpell(redirected, 35079, true);
+                            sLog->outString("Misdirection: Dodaje aure misTargetowi");
+                            SetRedirectThreatPercent(dummySpell->Effects[0].BasePoints);
+                        }
+                    }
+                    break;
+                }
                 case 57870: // Glyph of Mend Pet
                 {
                     victim->CastSpell(victim, 57894, true, NULL, NULL, GetGUID());

@@ -4724,6 +4724,14 @@ void AuraEffect::HandleModDamagePercentDone(AuraApplication const* aurApp, uint8
     {
         // done in Player::_ApplyWeaponDependentAuraMods for SPELL_SCHOOL_MASK_NORMAL && EquippedItemClass != -1 and also for wand case
     }
+    if (!apply)
+    {
+        if (m_spellInfo->Id == 57933)//Tricks of the Trade
+        {
+            sLog->outString("Tricks of trade: Usuwam aure misdirect casterowi");
+            GetBase()->GetCaster()->RemoveAura(57934);
+        }
+    }
 }
 
 void AuraEffect::HandleModOffhandDamagePercent(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -5331,6 +5339,48 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                         }
                     }
                 }
+                case SPELLFAMILY_HUNTER:
+                    {
+                        switch(GetId())
+                        {
+                            // Misdirection aura on target
+                            case 35079:
+                            {
+                                GetBase()->GetCaster()->RemoveAura(34477);
+                                break;
+                            }
+                            // Misdirection aura on caster
+                            case 34477:
+                            {
+                                Unit* caster = GetBase()->GetCaster();
+                                // Glyph of Misdirection
+                                if (Unit* mistarget = caster->GetRedirectThreatTarget())
+                                {
+                                    if (caster->HasAura(56829) && mistarget->isPet() && mistarget->GetOwnerGUID() == caster->GetGUID())
+                                    {
+                                        sLog->outString("Glyph of Misdirection: RESET");
+                                        caster->ToPlayer()->RemoveSpellCooldown(34477, true);
+                                    }
+                                }
+                                sLog->outString("Misdirection: Usuwam aure misdirection z castera");
+                                caster->SetRedirectThreat(0,0,0);
+                                break;
+                            }
+                        }
+                    }
+                    case SPELLFAMILY_ROGUE:
+                    {
+                        switch(GetId())
+                        {
+                            //Tricks of the Trade
+                            case 57934:
+                            {
+                                GetBase()->GetCaster()->SetRedirectThreat(0,0,0);
+                                sLog->outString("Tricki: Usuwam aure misdirection z castera");
+                                break;
+                            }
+                        }
+                    }
                 default:
                     break;
             }
