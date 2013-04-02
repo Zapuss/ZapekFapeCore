@@ -569,21 +569,18 @@ void Aura::UpdateTargetMap(Unit* caster, bool apply)
             // unit auras can not stack with each other
             else // (GetType() == UNIT_AURA_TYPE)
             {
-                // Allow to remove by stack when aura is going to be applied on owner
-                if (itr->first != GetOwner())
-                {
                     // check if not stacking aura already on target
                     // this one prevents unwanted usefull buff loss because of stacking and prevents overriding auras periodicaly by 2 near area aura owners
                     for (Unit::AuraApplicationMap::iterator iter = itr->first->GetAppliedAuras().begin(); iter != itr->first->GetAppliedAuras().end(); ++iter)
                     {
                         Aura const* aura = iter->second->GetBase();
-                        if (!CanStackWith(aura))
+                        // Owned aura has priority. Prevent apply new aura if both are external.
+                        if (!CanStackWith(aura) && (aura->GetOwner() == itr->first || GetOwner() != itr->first))
                         {
                             addUnit = false;
                             break;
                         }
                     }
-                }
             }
         }
         if (!addUnit)

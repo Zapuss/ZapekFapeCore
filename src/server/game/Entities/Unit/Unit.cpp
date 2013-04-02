@@ -3546,7 +3546,7 @@ void Unit::RemoveAura(AuraApplicationMap::iterator &i, AuraRemoveMode mode)
     Aura* aura = aurApp->GetBase();
     _UnapplyAura(i, mode);
     // Remove aura - for Area and Target auras
-    if (aura->GetOwner() == this)
+    if ((aura->GetOwner() == this) && !aura->IsPassive())
         aura->Remove(mode);
 }
 
