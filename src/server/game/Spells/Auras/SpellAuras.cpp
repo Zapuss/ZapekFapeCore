@@ -1389,6 +1389,12 @@ void Aura::HandleAuraSpecificMods(AuraApplication const* aurApp, Unit* caster, b
             case SPELLFAMILY_GENERIC:
                 switch (GetId())
                 {
+                     // Crescendo of Suffering (item: Sorrowsong)
+                    case 91002:
+                    case 90996:
+                        if (!onReapply)
+                            GetCaster()->ToPlayer()->AddSpellCooldown(GetId(), GetCastItemGUID(), time(NULL) + 10);
+                        break;
                     case 72368: // Shared Suffering
                     case 72369:
                         if (caster)

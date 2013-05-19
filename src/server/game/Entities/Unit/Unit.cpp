@@ -8315,6 +8315,17 @@ bool Unit::HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, Sp
                 }
                 return true;
             }
+
+            switch (dummySpell->Id)
+            {
+                // Item - Proc Spell Power Low Health (Sorrowsong)
+                case 91003:
+                case 90998:
+                    if (!victim->HealthBelowPctDamaged(triggeredByAura->GetEffect(EFFECT_0)->GetAmount(), damage))
+                     *handled = true;
+                    break;
+                break;
+            }
             break;
         }
         case SPELLFAMILY_MAGE:
@@ -9011,8 +9022,6 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
         case 92233: // Tectonic Shift
         case 92355: // Turn of the Worm
         case 92235: // Turn of the Worm
-        case 90996: // Crescendo of Suffering
-        case 91002: // Crescendo of Suffering
         case 75477: // Scale Nimbleness
         case 75480: // Scaly Nimbleness
         case 71633: // Thick Skin
