@@ -9018,6 +9018,7 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
     // dummy basepoints or other customs
     switch (trigger_spell_id)
     {
+        case 92179: // Lead Plating
         case 92184: // Lead Plating
         case 92233: // Tectonic Shift
         case 92355: // Turn of the Worm
