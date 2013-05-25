@@ -4894,6 +4894,22 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
             }
             switch (GetId())
             {
+                 // Blind Spot - Item: Jar of Ancient Remedies
+                case 91322:
+                {
+                    caster->RemoveAurasDueToSpell(91320);
+                    Player* player = caster->ToPlayer();
+                    player->AddSpellCooldown(91320, player->GetItemByGuid(GetBase()->GetCastItemGUID())->GetEntry(), time(NULL) + 30);
+                    break;
+                }
+                // Blind Spot - Item: Jar of Ancient Remedies
+                case 92331:
+                {
+                    caster->RemoveAurasDueToSpell(92329);
+                    Player* player = caster->ToPlayer();
+                    player->AddSpellCooldown(92329, player->GetItemByGuid(GetBase()->GetCastItemGUID())->GetEntry(), time(NULL) + 30);
+                    break;
+                }
                 case 1515:                                      // Tame beast
                     // FIX_ME: this is 2.0.12 threat effect replaced in 2.1.x by dummy aura, must be checked for correctness
                     if (caster && target->CanHaveThreatList())
