@@ -1393,7 +1393,7 @@ void Aura::HandleAuraSpecificMods(AuraApplication const* aurApp, Unit* caster, b
                     case 91002:
                     case 90996:
                         if (!onReapply)
-                            GetCaster()->ToPlayer()->AddSpellCooldown(GetId(), GetCastItemGUID(), time(NULL) + 10);
+                            GetCaster()->ToPlayer()->AddSpellCooldown(GetId(), 0, time(NULL) + 10);
                         break;
                     case 72368: // Shared Suffering
                     case 72369:
