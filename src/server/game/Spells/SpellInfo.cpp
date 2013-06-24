@@ -1225,7 +1225,7 @@ bool SpellInfo::IsStackableWithRanks() const
 
 bool SpellInfo::IsPassiveStackableWithRanks() const
 {
-    return IsPassive() && !HasEffect(SPELL_EFFECT_APPLY_AURA);
+    return IsPassive() && !HasEffect(SPELL_EFFECT_APPLY_AURA) && !HasAreaAuraEffect();
 }
 
 bool SpellInfo::IsMultiSlotAura() const

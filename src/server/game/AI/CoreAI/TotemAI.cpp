@@ -28,6 +28,9 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 
+#define FLAME_SHOCK 8050
+#define STORMSTRIKE 17364
+
 int
 TotemAI::Permissible(const Creature* creature)
 {
@@ -73,43 +76,40 @@ TotemAI::UpdateAI(const uint32 /*diff*/)
 
     // pointer to appropriate target if found any
     Unit* victim = i_victimGuid ? ObjectAccessor::GetUnit(*me, i_victimGuid) : NULL;
+    Unit* tmpvictim = 0;
 
     // Search victim if no, not attackable, or out of range, or friendly (possible in case duel end)
-    if (!victim ||
-        !victim->isTargetableForAttack() || !me->IsWithinDistInMap(victim, max_range) ||
-        me->IsFriendlyTo(victim) || !me->canSeeOrDetect(victim))
-            victim = NULL;
-    
-    // Find new victim if cleared above or try find out with specific auras
-    if (!victim || !(victim->HasAura(FLAME_SHOCK) || victim->HasAura(STORMSTRIKE)))
-    {
-        Unit* owner = me->GetOwner();
-        SentryTotemEnemyCheck aurachecker(me->ToUnit(), max_range, owner->GetGUID());
-        
-        //Step 1. Check target of owner 
-        if (Unit* ownerVictim = owner->getVictim())
-            if (aurachecker(ownerVictim))
-                victim = ownerVictim;
-
-        //Step 2. Try find victim in owner attacker list
-        if (!victim || !(victim->HasAura(FLAME_SHOCK) || victim->HasAura(STORMSTRIKE)))
-        {
-            Unit::AttackerSet attackers = owner->getAttackers();
-            Unit::AttackerSet::iterator itr = find_if(attackers.begin(), attackers.end(), aurachecker);
-            if (itr != attackers.end())
-                victim = *itr;
-        }
-        //Step 3. No enemies with stormstrike or flame shock. Take target of owner or other random if had have not victim at start
-        if (!victim)
-           if (Unit* attacker = owner->getAttackerForHelper())
-               victim = attacker;
-
-        //Still no target? Lets roast creeps!
-        if (!victim)
+    if (!victim || (!victim->isTargetableForAttack() || !me->IsWithinDistInMap(victim, max_range) ||
+        me->IsFriendlyTo(victim) || !me->canSeeOrDetect(victim)))
         {
             Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, me, max_range);
             Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
             me->VisitNearbyObject(max_range, checker);
+            tmpvictim = victim;
+        }
+    else if(!(victim->HasAura(FLAME_SHOCK, me->GetOwnerGUID()) || victim->HasAura(STORMSTRIKE, me->GetOwnerGUID())))
+        tmpvictim = victim;
+
+    Unit* owner = me->GetOwner();
+    // looking for attacker with specific auras, do only if new victim found in radius or current victim has no aura
+    if (owner && tmpvictim)
+    {
+        if (Unit* ownervictim = owner->getVictim())
+        {
+            //Owner's target is priority
+            if (me->IsWithinDistInMap(ownervictim, max_range) && (ownervictim->HasAura(FLAME_SHOCK, owner->GetGUID()) || ownervictim->HasAura(STORMSTRIKE, owner->GetGUID())))
+                victim = ownervictim;
+            else
+            {
+                Unit::AttackerSet attackers = owner->getAttackers();
+                for (Unit::AttackerSet::iterator itr = attackers.begin(); itr != attackers.end(); ++itr)
+                {
+                    tmpvictim = *itr;
+                    if (me->IsWithinDistInMap(tmpvictim, max_range) && 
+                       (tmpvictim->HasAura(FLAME_SHOCK, owner->GetGUID()) || tmpvictim->HasAura(STORMSTRIKE, owner->GetGUID())))
+                        victim = tmpvictim;
+                }
+            }
         }
     }
 

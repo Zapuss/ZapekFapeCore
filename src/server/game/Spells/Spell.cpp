@@ -1905,11 +1905,11 @@ void Spell::SearchChainTargets(std::list<WorldObject*>& targets, uint32 chainTar
             // 7.5y for multi shot
             jumpRadius = 7.5f;
             break;
+        case SPELL_DAMAGE_CLASS_NONE:
         case SPELL_DAMAGE_CLASS_MELEE:
             // 5y for swipe, cleave and similar
             jumpRadius = 5.0f;
             break;
-        case SPELL_DAMAGE_CLASS_NONE:
         case SPELL_DAMAGE_CLASS_MAGIC:
             // 12.5y for chain heal spell since 3.2 patch
             if (isChainHeal)

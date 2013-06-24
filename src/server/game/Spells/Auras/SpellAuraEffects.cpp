@@ -4724,6 +4724,11 @@ void AuraEffect::HandleModDamagePercentDone(AuraApplication const* aurApp, uint8
     {
         // done in Player::_ApplyWeaponDependentAuraMods for SPELL_SCHOOL_MASK_NORMAL && EquippedItemClass != -1 and also for wand case
     }
+    if (!apply)
+    {
+        if (m_spellInfo->Id == 57933)//Tricks of the Trade
+            GetBase()->GetCaster()->RemoveAura(57934);
+    }
 }
 
 void AuraEffect::HandleModOffhandDamagePercent(AuraApplication const* aurApp, uint8 mode, bool apply) const
@@ -4889,6 +4894,22 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
             }
             switch (GetId())
             {
+                 // Blind Spot - Item: Jar of Ancient Remedies
+                case 91322:
+                {
+                    caster->RemoveAurasDueToSpell(91320);
+                    Player* player = caster->ToPlayer();
+                    player->AddSpellCooldown(91320, player->GetItemByGuid(GetBase()->GetCastItemGUID())->GetEntry(), time(NULL) + 30);
+                    break;
+                }
+                // Blind Spot - Item: Jar of Ancient Remedies
+                case 92331:
+                {
+                    caster->RemoveAurasDueToSpell(92329);
+                    Player* player = caster->ToPlayer();
+                    player->AddSpellCooldown(92329, player->GetItemByGuid(GetBase()->GetCastItemGUID())->GetEntry(), time(NULL) + 30);
+                    break;
+                }
                 case 1515:                                      // Tame beast
                     // FIX_ME: this is 2.0.12 threat effect replaced in 2.1.x by dummy aura, must be checked for correctness
                     if (caster && target->CanHaveThreatList())
@@ -5309,18 +5330,6 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                         }
                     }
                     break;
-                case SPELLFAMILY_HUNTER:
-                    switch (GetId())
-                    {
-                        case 34477: // Misdirection
-                            if (aurApp->GetRemoveMode() != AURA_REMOVE_BY_EXPIRE)
-                                target->SetReducedThreatPercent(0, 0);
-                            break;
-                        case 35079: // Misdirection proc
-                            target->SetReducedThreatPercent(0, 0);
-                            break;
-                    }
-                    break;
                 case SPELLFAMILY_DEATHKNIGHT:
                     // Summon Gargoyle (Dismiss Gargoyle at remove)
                     if (GetId() == 61777)
@@ -5343,6 +5352,43 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                         }
                     }
                 }
+                case SPELLFAMILY_HUNTER:
+                    {
+                        switch(GetId())
+                        {
+                            // Misdirection aura on target
+                            case 35079:
+                            {
+                                GetBase()->GetCaster()->RemoveAura(34477);
+                                break;
+                            }
+                            // Misdirection aura on caster
+                            case 34477:
+                            {
+                                Unit* caster = GetBase()->GetCaster();
+                                // Glyph of Misdirection
+                                if (Unit* mistarget = caster->GetRedirectThreatTarget())
+                                {
+                                    if (caster->HasAura(56829) && mistarget->isPet() && mistarget->GetOwnerGUID() == caster->GetGUID())
+                                        caster->ToPlayer()->RemoveSpellCooldown(34477, true);
+                                }
+                                caster->SetRedirectThreat(0,0,0);
+                                break;
+                            }
+                        }
+                    }
+                    case SPELLFAMILY_ROGUE:
+                    {
+                        switch(GetId())
+                        {
+                            //Tricks of the Trade
+                            case 57934:
+                            {
+                                GetBase()->GetCaster()->SetRedirectThreat(0,0,0);
+                                break;
+                            }
+                        }
+                    }
                 default:
                     break;
             }

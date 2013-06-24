@@ -1,0 +1,1 @@
+DELETE FROM spell_proc_event WHERE entry IN (90998, 91003); -- Item Sorrowsong 

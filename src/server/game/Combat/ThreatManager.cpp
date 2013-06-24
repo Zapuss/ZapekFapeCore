@@ -95,7 +95,6 @@ bool ThreatCalcHelper::isValidProcess(Unit* hatedUnit, Unit* hatingUnit, SpellIn
 HostileReference::HostileReference(Unit* refUnit, ThreatManager* threatManager, float threat)
 {
     iThreat = threat;
-    iTempThreatModifier = 0.0f;
     link(refUnit, threatManager);
     iUnitGuid = refUnit->GetGUID();
     iOnline = true;
@@ -162,7 +161,42 @@ void HostileReference::addThreatPercent(int32 percent)
     AddPctN(tmpThreat, percent);
     addThreat(tmpThreat - iThreat);
 }
+//============================================================
 
+void HostileReference::updateTempThreatMap()
+{
+    if (iTempThreatMap.empty())
+        return;
+    TempThreatItr itr = iTempThreatMap.begin();
+    // for keys with zero value temp threat is unlimited and is supported by auras.
+    if (itr->first == 0)
+        ++itr;
+    if (itr != iTempThreatMap.end() && itr->first <= time(NULL))
+    {
+        resetTempThreat(itr->first);
+        updateTempThreatMap();
+    }
+}
+
+float HostileReference::getTempThreatModifier(time_t expirationTime)
+{
+    TempThreatItr itr = iTempThreatMap.find(expirationTime);
+    if (itr != iTempThreatMap.end())
+        return itr->second;
+    return 0.0f;
+}
+
+bool HostileReference::resetTempThreat(time_t expirationTime)
+{
+    TempThreatItr itr = iTempThreatMap.find(expirationTime);
+    if (itr != iTempThreatMap.end() && itr->second != 0.0f)
+    {
+        addThreat(-itr->second);
+        iTempThreatMap.erase(itr);
+        return true;
+    }
+    return false;
+}
 //============================================================
 // check, if source can reach target and set the status
 
@@ -410,26 +444,31 @@ void ThreatManager::addThreat(Unit* victim, float threat, SpellSchoolMask school
 
 void ThreatManager::doAddThreat(Unit* victim, float threat)
 {
-    uint32 reducedThreadPercent = victim->GetReducedThreatPercent();
-
     // must check > 0.0f, otherwise dead loop
-    if (threat > 0.0f && reducedThreadPercent)
+    if (threat > 0.0f)
     {
-        Unit* redirectTarget = victim->GetMisdirectionTarget();
-        if (redirectTarget)
-            if (Aura* glyphAura = redirectTarget->GetAura(63326)) // Glyph of Vigilance
-                reducedThreadPercent += glyphAura->GetSpellInfo()->Effects[0].CalcValue();
-
-        float reducedThreat = threat * reducedThreadPercent / 100.0f;
-        threat -= reducedThreat;
-        if (redirectTarget)
-            _addThreat(redirectTarget, reducedThreat);
+        if (Unit* redirectTarget = victim->GetRedirectThreatTarget())
+        {
+            float reducedThreat = CalculatePctN(threat, victim->GetRedirectThreatPercent());
+            if (reducedThreat)
+            {
+                threat -= reducedThreat;
+                if (int32 duration = victim->GetRedirectThreatDuration())
+                {
+                    // looking for reference
+                    if (HostileReference* ref = _addThreat(redirectTarget, 0.0f))
+                        ref->addTempThreat(reducedThreat, time(NULL) + duration);
+                }
+                    // else threat is permament
+                else
+                    _addThreat(redirectTarget, reducedThreat);
+            }
+        }
     }
-
     _addThreat(victim, threat);
 }
 
-void ThreatManager::_addThreat(Unit* victim, float threat)
+HostileReference* ThreatManager::_addThreat(Unit* victim, float threat)
 {
     HostileReference* ref = iThreatContainer.addThreat(victim, threat);
     // Ref is not in the online refs, search the offline refs next
@@ -444,7 +483,9 @@ void ThreatManager::_addThreat(Unit* victim, float threat)
         hostileRef->addThreat(threat); // now we add the real threat
         if (victim->GetTypeId() == TYPEID_PLAYER && victim->ToPlayer()->isGameMaster())
             hostileRef->setOnlineOfflineState(false); // GM is always offline
+        return hostileRef;
     }
+    return ref;
 }
 
 //============================================================
@@ -587,4 +628,12 @@ void ThreatManager::resetAllAggro()
     }
 
     setDirty(true);
+}
+
+//========================================================================
+void ThreatManager::updateTempThreat()
+{
+    std::list<HostileReference*> &threatList = getThreatList();
+    for (std::list<HostileReference*>::iterator itr = threatList.begin(); itr != threatList.end(); ++itr)
+        (*itr)->updateTempThreatMap();
 }

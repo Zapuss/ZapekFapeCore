@@ -237,8 +237,9 @@ _vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE), m_HostileRefManager(this), mo
         m_speed_rate[i] = 1.0f;
 
     m_charmInfo = NULL;
-    m_reducedThreatPercent = 0;
-    m_misdirectionTargetGUID = 0;
+    m_redirectThreatPercent = 0;
+    m_redirectTargetGUID = 0;
+    m_redirectThreatDuration = 0;
 
     // remove aurastates allowing special moves
     for (uint8 i = 0; i < MAX_REACTIVE; ++i)
@@ -329,8 +330,12 @@ void Unit::Update(uint32 p_time)
     // Having this would prevent spells from being proced, so let's crash
     ASSERT(!m_procDeep);
 
-    if (CanHaveThreatList() && getThreatManager().isNeedUpdateToClient(p_time))
-        SendThreatListUpdate();
+    if (CanHaveThreatList())
+    {
+        getThreatManager().updateTempThreat();
+        if(getThreatManager().isNeedUpdateToClient(p_time))
+            SendThreatListUpdate();
+    }
 
     // update combat timer only for players and pets (only pets with PetAI)
     if (isInCombat() && (GetTypeId() == TYPEID_PLAYER || (ToCreature()->isPet() && IsControlledByPlayer())))
@@ -3541,7 +3546,7 @@ void Unit::RemoveAura(AuraApplicationMap::iterator &i, AuraRemoveMode mode)
     Aura* aura = aurApp->GetBase();
     _UnapplyAura(i, mode);
     // Remove aura - for Area and Target auras
-    if (aura->GetOwner() == this)
+    if ((aura->GetOwner() == this) && !aura->IsPassive())
         aura->Remove(mode);
 }
 
@@ -6658,6 +6663,20 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
                     triggered_spell_id = 32747;
                     break;
                 }
+                //Tricks of the Trade
+                case 57934:
+                {
+                    // Apply aura on first attack
+                    if (Unit* redirected = GetRedirectThreatTarget())
+                    {
+                        if (!redirected->HasAura(57933))
+                        {
+                            CastSpell(redirected, 57933, true);
+                            SetRedirectThreatPercent(dummySpell->Effects[0].BasePoints);
+                        }
+                    }
+                    break;
+                }
             }
 
             switch (dummySpell->SpellIconID)
@@ -6785,11 +6804,19 @@ bool Unit::HandleDummyAuraProc(Unit* victim, uint32 damage, AuraEffect* triggere
 
             switch (dummySpell->Id)
             {
-                case 34477: // Misdirection
+                // Misdirection
+                case 34477:
                 {
-                    triggered_spell_id = 35079; // 4 sec buff on self
-                    target = this;
-                    return true;
+                    // Apply aura on first attack
+                    if (Unit* redirected = GetRedirectThreatTarget())
+                    {
+                        if (!redirected->HasAura(35079))
+                        {
+                            CastSpell(redirected, 35079, true);
+                            SetRedirectThreatPercent(dummySpell->Effects[0].BasePoints);
+                        }
+                    }
+                    break;
                 }
                 case 57870: // Glyph of Mend Pet
                 {
@@ -8186,7 +8213,7 @@ bool Unit::HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, Sp
                 // Swift Hand of Justice
                 case 59906:
                 {
-                    int32 bp0 = CalculatePctN(GetMaxHealth(), dummySpell->Effects[EFFECT_0]. CalcValue());
+                    int32 bp0 = CalculatePctN(GetMaxHealth(), dummySpell->Effects[EFFECT_0].CalcValue());
                     CastCustomSpell(this, 59913, &bp0, NULL, NULL, true);
                     *handled = true;
                     break;
@@ -8287,6 +8314,17 @@ bool Unit::HandleAuraProc(Unit* victim, uint32 damage, Aura* triggeredByAura, Sp
                     }
                 }
                 return true;
+            }
+
+            switch (dummySpell->Id)
+            {
+                // Item - Proc Spell Power Low Health (Sorrowsong)
+                case 91003:
+                case 90998:
+                    if (!victim->HealthBelowPctDamaged(triggeredByAura->GetEffect(EFFECT_0)->GetAmount(), damage))
+                     *handled = true;
+                    break;
+                break;
             }
             break;
         }
@@ -8980,12 +9018,11 @@ bool Unit::HandleProcTriggerSpell(Unit* victim, uint32 damage, AuraEffect* trigg
     // dummy basepoints or other customs
     switch (trigger_spell_id)
     {
+        case 92179: // Lead Plating
         case 92184: // Lead Plating
         case 92233: // Tectonic Shift
         case 92355: // Turn of the Worm
         case 92235: // Turn of the Worm
-        case 90996: // Crescendo of Suffering
-        case 91002: // Crescendo of Suffering
         case 75477: // Scale Nimbleness
         case 75480: // Scaly Nimbleness
         case 71633: // Thick Skin
@@ -15267,7 +15304,7 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* victim, Aura* aura, SpellInfo const
     }
     
     if ((!DBUG_A_FLTR && procSpell && procSpell->Id == DBUG_S_FLTR) || (!DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR) || (procSpell && procSpell->Id == DBUG_S_FLTR && spellProto->Id == DBUG_A_FLTR))
-        sLog->outString("Unit %u, aura %u: ProcFlagi dla aury wczytane pomyslnie(%u). Czy procuje dla danej akcji?:", GetGUIDLow(), (spellProto ? spellProto->Id : 0), EventProcFlag);
+        sLog->outString("Unit %u, aura %u: ProcFlagi dla aury wczytane pomyslnie(%u). Czy procuje dla danej akcji(proc flagi tej akcji %u)?:", GetGUIDLow(), (spellProto ? spellProto->Id : 0), EventProcFlag, procFlag);
     // Check spellProcEvent data requirements
     if (!sSpellMgr->IsSpellProcEventCanTriggeredBy(spellProcEvent, EventProcFlag, procSpell, procFlag, procExtra, active))
     {

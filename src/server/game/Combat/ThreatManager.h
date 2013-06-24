@@ -26,6 +26,7 @@
 #include "UnitEvents.h"
 
 #include <list>
+#include <map>
 
 //==============================================================
 
@@ -35,7 +36,7 @@ class ThreatManager;
 class SpellInfo;
 
 #define THREAT_UPDATE_INTERVAL 1 * IN_MILLISECONDS    // Server should send threat update to client periodically each second
-
+typedef std::map<time_t, float>::iterator  TempThreatItr;
 //==============================================================
 // Class to calculate the real threat based
 
@@ -68,28 +69,25 @@ class HostileReference : public Reference<Unit, ThreatManager>
 
         // used for temporary setting a threat and reducting it later again.
         // the threat modification is stored
-        void setTempThreat(float threat)
+        void setTempThreat(float threat, time_t expirationTime = 0)
         {
-            addTempThreat(threat - getThreat());
+            addTempThreat(threat - getThreat(), expirationTime);
         }
 
-        void addTempThreat(float threat)
+        void addTempThreat(float threat, time_t expirationTime = 0)
         {
-            iTempThreatModifier = threat;
-            if (iTempThreatModifier != 0.0f)
-                addThreat(iTempThreatModifier);
+            if (iTempThreatMap.find(expirationTime) == iTempThreatMap.end())
+                iTempThreatMap.insert(std::pair<time_t, float>(expirationTime, threat));
+            else
+                iTempThreatMap[expirationTime] += threat;
+            addThreat(threat);
         }
 
-        void resetTempThreat()
-        {
-            if (iTempThreatModifier != 0.0f)
-            {
-                addThreat(-iTempThreatModifier);
-                iTempThreatModifier = 0.0f;
-            }
-        }
+        bool resetTempThreat(time_t expirationTime = 0);
 
-        float getTempThreatModifier() { return iTempThreatModifier; }
+        float getTempThreatModifier(time_t expirationTime = 0);
+        //reset temp threads if defnied expiration time passed, used in redirect target effects
+        void updateTempThreatMap();
 
         //=================================================
         // check, if source can reach target and set the status
@@ -132,10 +130,10 @@ class HostileReference : public Reference<Unit, ThreatManager>
         Unit* getSourceUnit();
     private:
         float iThreat;
-        float iTempThreatModifier;                          // used for taunt
         uint64 iUnitGuid;
         bool iOnline;
         bool iAccessible;
+        std::map<time_t, float> iTempThreatMap;
 };
 
 //==============================================================
@@ -221,6 +219,9 @@ class ThreatManager
         // Reset all aggro without modifying the threadlist.
         void resetAllAggro();
 
+        // Move this to Unit:: if necesarry
+        void updateTempThreat();
+
         // Reset all aggro of unit in threadlist satisfying the predicate.
         template<class PREDICATE> void resetAggro(PREDICATE predicate)
         {
@@ -247,7 +248,7 @@ class ThreatManager
         ThreatContainer& getOnlineContainer() { return iThreatContainer; }
         ThreatContainer& getOfflineContainer() { return iThreatOfflineContainer; }
     private:
-        void _addThreat(Unit* victim, float threat);
+        HostileReference* _addThreat(Unit* victim, float threat);
 
         HostileReference* iCurrentVictim;
         Unit* iOwner;
